@@ -176,6 +176,6 @@ theorem hakuiKoyoriNumber_gt_firstHarvest :
   have hmem : AssistantCode.input ∈ assistants firstHarvest :=
     mem_assistants_of_depth_le AssistantCode.input (Nat.zero_le _)
   have h := diagonal_gt_assistant firstHarvest AssistantCode.input hmem
-  simpa [evaluate] using h
+  simpa [evaluate, hakuiKoyoriNumber] using h
 
 end HakuiKoyori
