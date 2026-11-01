@@ -13,7 +13,7 @@ where (f) is defined in the author's “First Order Theory beyond Higher Order S
 Sources:
 
 - [Googology Wiki: Large Number Garden Number](https://googology.miraheze.org/wiki/Large_Number_Garden_Number)
-- [Original-author post: 高階集合論を超えた1階述語論理](https://googology.fandom.com/ja/wiki/%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%83%96%E3%83%AD%E3%82%B0:P%E9%80%B2%E5%A4%A7%E5%A5%BD%E3%81%8Dbot/%E9%AB%98%E9%9A%8E%E9%9B%86%E5%90%88%E8%AB%96%E3%82%92%E8%B6%85%E3%81%88%E3%81%9F1%E9%9A%8E%E8%BF%B0%E8%AA%9E%E8%AB%96%E7%90%86)
+- [Original-author post: First Order Theory beyond Higher Order Set Theory](https://googology.fandom.com/wiki/User_blog:P%E9%80%B2%E5%A4%A7%E5%A5%BD%E3%81%8Dbot/First_Order_Theory_beyond_Higher_Order_Set_Theory)
 - [Original-author English summary](https://googology.fandom.com/wiki/User_blog:P%E9%80%B2%E5%A4%A7%E5%A5%BD%E3%81%8Dbot/First_Order_Theory_beyond_Higher_Order_Set_Theory)
 
 The original-author article is a primary-source blog post hosted by a community wiki, not a peer-reviewed journal article. The LNGN entry is also community-maintained. These sources are sufficient to audit the stated construction, but they do not establish a universal record among all possible finite-number definitions.
