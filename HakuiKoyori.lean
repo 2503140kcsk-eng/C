@@ -173,9 +173,10 @@ theorem hakuiKoyoriNumber_dominates_catalogue
 /-- In particular, the candidate is strictly greater than its first harvest. -/
 theorem hakuiKoyoriNumber_gt_firstHarvest :
     firstHarvest < hakuiKoyoriNumber := by
+  change firstHarvest < diagonal firstHarvest
   have hmem : AssistantCode.input ∈ assistants firstHarvest :=
     mem_assistants_of_depth_le AssistantCode.input (Nat.zero_le _)
-  have h := diagonal_gt_assistant firstHarvest AssistantCode.input hmem
-  simpa [evaluate, hakuiKoyoriNumber] using h
+  simpa only [evaluate] using
+    diagonal_gt_assistant firstHarvest AssistantCode.input hmem
 
 end HakuiKoyori
