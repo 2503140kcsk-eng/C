@@ -1,73 +1,86 @@
 # Hakui Koyori Number（博衣こより数）
 
-**An independent, set-theory-free googology research project with Lean 4 proofs.**
+**A finite, set-theory-free googology research project with Lean 4 formal proofs.**
 
-> Status: **RESEARCH / COMPARISON-BLOCKED**  
-> The current milestone contains a precisely defined finite candidate and a Lean proof of its diagonal property. It does **not** yet prove that the candidate exceeds the Large Number Garden Number (LNGN).
+> **Current status: MILESTONE 0 VERIFIED / LNGN COMPARISON NOT PROVED.**  
+> The current candidate is completely specified and its diagonal theorem passes Lean CI. It has not been shown to exceed the Large Number Garden Number.
 
-## Why this project exists
+## Inspiration
 
-The project takes inspiration from the public character concept of Hakui Koyori: a researcher and R&D member of Secret Society holoX, an unusually curious investigator, and someone whose fan community is called Koyori's Assistants. The mathematics turns that motif into a finite “assistant laboratory”: a finite catalogue of arithmetic programs is evaluated, its greatest output is harvested, and the next diagonal stage is set beyond every program in the previous catalogue.
+The design is inspired by the public concept of Hakui Koyori: holoX's researcher and R&D member, her curiosity-driven experiments, and her fan community of “助手くん”. In this project, the assistants form a finite laboratory of arithmetic programs: enumerate them, run each at a prescribed input, harvest the maximum output, and define the next stage to exceed the entire previous catalogue.
 
-This is an unofficial fan-inspired mathematical project. It is not affiliated with, endorsed by, or a representation of COVER Corp. or Hakui Koyori. It uses no official artwork, music, or other proprietary media.
+This is an unofficial fan-inspired mathematical project. It is not affiliated with or endorsed by COVER Corp. or Hakui Koyori. No official artwork, music, voice, or proprietary media is included.
 
-Official profile: https://hololive.hololivepro.com/talents/hakui-koyori/  
-Official YouTube channel: https://www.youtube.com/@hakuikoyori
+- Official profile: https://hololive.hololivepro.com/talents/hakui-koyori/
+- Official YouTube channel: https://www.youtube.com/@hakuikoyori
 
-## Non-negotiable mathematical constraints
+## Mathematical constraints
 
 1. The target is a **finite natural number**, not infinity or an ordinal.
-2. The number's definition must be complete and unambiguous.
-3. The number's mathematical construction must not use ZF, ZFC, MK, a set-theoretic universe hierarchy, or set-membership semantics.
-4. Every proved claim must be checked by Lean's kernel; numerical experiments are not proofs.
-5. A comparison with another named number is not accepted until the other number's exact semantics and the comparison theorem are formalized.
-6. No result may be described as “larger than LNGN” merely because it looks more complicated or uses a higher-looking notation.
+2. Its definition must be exact and unambiguous.
+3. The construction must not use ZF, ZFC, MK, set-theoretic universes, or a set-membership relation.
+4. Claims must be checked by Lean's kernel. Numerical experiments are not proofs.
+5. No comparison claim is accepted until the target's exact semantics and a comparison theorem are formalized.
+6. A larger-looking notation is not evidence that one number exceeds another.
 
-## Current candidate: assistant-laboratory diagonalization
+## Milestone-0 definition
 
-The prototype uses a small, explicit language of total unary arithmetic programs. For an input (n), let (A_n) be the finite list of all assistant programs whose syntax depth is at most (n). Each program is evaluated at input (n). Define
+The Lean file `HakuiKoyori.lean` defines a finite language of total unary arithmetic programs. A program is built from:
 
-[
-D(n)=1+\max\{\operatorname{eval}(p,n):p\in A_n\}.
-]
+- the input, zero, and one;
+- successor, doubling, squaring, and self-power;
+- `repeatAtInput`, which iterates an inner program exactly (n) times when evaluated at input (n).
 
-Let (T_0(0)=1), (T_0(k+1)=10^{T_0(k)}), and (b=T_0(10)). The milestone-0 candidate is
+Let `depth(p)` be the syntax depth of program (p), and let (A_n) be the finite catalogue of all programs of depth at most (n). Let `eval(p,n)` denote the output of program (p) on input (n). Define
 
-[
-\boxed{\mathrm{HKN}_0=D(D(b)).}
-]
+```text
+D(n) = 1 + max { eval(p,n) : p is in A_n }
 
-The expression language and evaluator are given in `HakuiKoyori.lean`. The file proves that (D(n)) is strictly greater than the value at (n) of every program in (A_n). Consequently, (mathrm{HKN}_0) exceeds every program in this language whose syntax depth is at most (D(b)), when those programs are evaluated at (D(b)).
+T(0) = 1
+T(k+1) = 10 ^ T(k)
+b = T(10)
 
-This is a genuine finite diagonal construction. It is not a claim that the prototype already dominates every total computable function, every formal theory, or LNGN.
+firstHarvest = D(b)
+HKN_0 = D(firstHarvest) = D(D(b))
+```
 
-## Why the LNGN comparison is blocked
+The maximum is over a finite nonempty catalogue, and every program in the language is total. Thus this specifies one finite natural number. The Lean development proves that `D(n)` is strictly greater than the output at (n) of every program in (A_n). Its main theorem therefore proves that `HKN_0` exceeds every program in this language of depth at most `firstHarvest`, evaluated at `firstHarvest`.
 
-The published description of LNGN gives it as (f^{10}(10\uparrow^{10}10)), where (f) is defined using a theory that explicitly starts from first-order set theory with the membership relation (\in), extends ZF/ZFC axiom schemas, and discusses embeddings of ZFC and MK set theory. See [Googology Wiki's LNGN entry](https://googology.miraheze.org/wiki/Large_Number_Garden_Number) and the original-author summary [First Order Theory beyond Higher Order Set Theory](https://googology.fandom.com/wiki/User_blog:P%E9%80%B2%E5%A4%A7%E5%A5%BD%E3%81%8Dbot/First_Order_Theory_beyond_Higher_Order_Set_Theory).
+This is a genuine finite diagonal construction, but the language is deliberately limited. It does **not** establish domination of all computable functions, all formal theories, or LNGN.
 
-This creates a real design conflict: the present candidate deliberately avoids set theory, while the target is defined through a set-theoretic meta-theory. A proof of (mathrm{HKN}_0>\mathrm{LNGN}) requires (at minimum) a precise, machine-checkable interpretation of the target's theory and a theorem relating that interpretation to the HKN language. No such theorem is claimed here.
+## Why the LNGN comparison is open
 
-The community description of LNGN is not a peer-reviewed theorem establishing a universal “largest number”; “largest” in googology is always relative to a specified class of definitions and conventions. There is no largest finite natural number in the unrestricted sense, since (N+1>N).
+The community entry describes LNGN as
+
+```text
+f iterated 10 times at (10 ↑^10 10)
+```
+
+where (f) is defined through “First Order Theory beyond Higher Order Set Theory”. The published construction explicitly uses a first-order set-theory language with the membership relation, ZF/ZFC schemas, and an embedding discussion involving ZFC and MK. That conflicts with this project's no-set-theory constraint.
+
+A proof of `HKN_0 > LNGN` would require a machine-checkable formalization of the exact target semantics and a value-preserving comparison theorem, or an independently proved numerical upper bound on LNGN. Neither has been established. See [the LNGN audit](docs/LNGN_AUDIT.md).
+
+The community description is not a peer-reviewed theorem establishing a universal “largest number”. Its historical “largest well-defined googologism” wording is a googology status claim, not a theorem about all finite natural numbers. There is no largest finite natural number without restricting the class of allowed descriptions: for every (N), (N+1>N).
 
 ## Verification
 
-The CI workflow uses the Lean 4.35.0 toolchain and checks the proof file without Mathlib or third-party dependencies:
+The project pins Lean 4.35.0 and has no Mathlib or third-party Lean dependencies in milestone 0.
 
-```sh
-lean --version
-lean HakuiKoyori.lean
-```
+- Successful workflow: https://github.com/2503140kcsk-eng/C/actions/runs/41358704214
+- Verified commit: `fb5ab1dfd0b90469efca745195744732283f843b`
+- Checks: Lake build, direct Lean source check, and axiom-audit.
 
-A green CI run certifies only the declarations in the committed Lean file. It does not certify a comparison with LNGN.
+A green run certifies the declarations in that commit under the pinned toolchain. It does not certify a comparison with LNGN.
 
 ## Research gates
 
 - [x] Fix a finite, set-theory-free arithmetic language.
-- [x] Define its finite depth-bounded assistant catalog and evaluator.
-- [x] Prove the diagonal dominance theorem in Lean.
-- [ ] Audit the definition of FOTbHOST against the original author's full specification.
+- [x] Define its finite depth-bounded assistant catalogue and evaluator.
+- [x] Prove diagonal dominance in Lean.
+- [x] Pass Lean 4.35.0 CI and the configured axiom audit.
+- [ ] Audit FOTbHOST against the original author's complete specification.
 - [ ] Formalize the target semantics without silently assuming consistency or soundness.
 - [ ] Prove a value-preserving interpretation/comparison theorem, or document a rigorous obstruction.
-- [ ] Only after the comparison theorem passes review, freeze a final HKN definition and claim.
+- [ ] Only after comparison review, freeze a final HKN definition and any size claim.
 
-See [the LNGN audit](docs/LNGN_AUDIT.md), [the formal status](docs/FORMAL_STATUS.md), and [the tool-role matrix](docs/TOOL_ROLES.md).
+See [formal status](docs/FORMAL_STATUS.md) and [tool roles](docs/TOOL_ROLES.md).
