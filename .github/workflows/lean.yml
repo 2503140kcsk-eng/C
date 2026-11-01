@@ -23,6 +23,7 @@ jobs:
           lint: false
           use-mathlib-cache: false
           axiom-audit: true
+          axiom-audit-root: HakuiKoyori
       - name: Show Lean version
         run: lean --version
       - name: Check standalone formalization
