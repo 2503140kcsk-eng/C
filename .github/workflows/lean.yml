@@ -1,0 +1,23 @@
+name: Lean proof check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean4-action@v1
+      - name: Show Lean version
+        run: lean --version
+      - name: Check formal proofs
+        run: lean HakuiKoyori.lean
