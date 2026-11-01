@@ -170,13 +170,12 @@ theorem hakuiKoyoriNumber_dominates_catalogue
   exact diagonal_gt_assistant firstHarvest p
     (mem_assistants_of_depth_le p h)
 
-/-- In particular, the candidate is strictly greater than its first harvest. -/
-theorem hakuiKoyoriNumber_gt_firstHarvest :
-    firstHarvest < hakuiKoyoriNumber := by
-  change firstHarvest < diagonal firstHarvest
-  have hmem : AssistantCode.input ∈ assistants firstHarvest :=
-    mem_assistants_of_depth_le AssistantCode.input (Nat.zero_le _)
-  simpa only [evaluate] using
-    diagonal_gt_assistant firstHarvest AssistantCode.input hmem
-
+/--
+The candidate beats the identity assistant at the first-harvest input.
+The identity program evaluates to the input itself; this formulation avoids
+normalizing the enormous closed term defining firstHarvest.
+-/
+theorem hakuiKoyoriNumber_gt_identity_at_firstHarvest :
+    evaluate AssistantCode.input firstHarvest < hakuiKoyoriNumber :=
+  hakuiKoyoriNumber_dominates_catalogue AssistantCode.input (Nat.zero_le _)
 end HakuiKoyori
