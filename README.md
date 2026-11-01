@@ -83,4 +83,4 @@ A green run certifies the declarations in that commit under the pinned toolchain
 - [ ] Prove a value-preserving interpretation/comparison theorem, or document a rigorous obstruction.
 - [ ] Only after comparison review, freeze a final HKN definition and any size claim.
 
-See [formal status](docs/FORMAL_STATUS.md) and [tool roles](docs/TOOL_ROLES.md).
+See [formal status](docs/FORMAL_STATUS.md), [the next Busy Beaver research plan](docs/NEXT_RESEARCH_PLAN.md), and [tool roles](docs/TOOL_ROLES.md).
