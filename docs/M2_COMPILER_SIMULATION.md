@@ -239,6 +239,41 @@ The intended final theorem has the shape
 This fixes the source model, input encoding, output convention, and observable
 value before claiming semantic preservation.
 
+
+### Exact scope of the input parameter
+
+The composite theorem above is a many-one simulation with an explicit,
+computable input translation:
+`n ↦ inputCode(n)`. This is sufficient for a halting-preserving
+compiler/reduction theorem because the compiler and the translated input are
+both effectively constructed from the finite TM and the natural input.
+
+It does **not**, by itself, prove the un-reparameterized pointwise claim
+`busyBeaver(bound,n) > f(n)` for the M1 function whose initial left counter
+is exactly `n). In general, `inputCode(n) ≠ n`, and a theorem about
+`busyBeaver(bound,inputCode(n))` cannot be silently rewritten as one about
+`busyBeaver(bound,n)`.
+
+There are two precise theorem choices:
+
+1. Define and prove a named encoded-input diagonal function
+   `busyBeaverEncoded(bound,n) := busyBeaver(bound,inputCode(n))`.
+   This gives the pointwise domination theorem relative to the explicit
+   encoding and is the direct corollary of the composite compiler theorem.
+2. If the intended statement must use the existing M1 function at the raw
+   argument `n`, add and prove a two-counter input-loader prelude
+   `loadUnaryInput` such that, from the M1 initial configuration
+   `(pc,left,right)=(0,n,0)`, it reaches the exact prime-power encoding of
+   the initial TM tape. The loader must have a total termination proof for
+   every `n), preserve the designated source input, and be included in the
+   program-size bound and final simulation theorem.
+
+Until option 2 is proved, this project may claim the encoded-input simulation
+and the encoded-input domination corollary only. It must not claim the raw
+argument domination theorem. This is a separate interface obligation, not a
+failure of the finite-TM-to-target simulation itself.
+
+
 ## 4. Simulation relation and theorem shape
 
 Let R relate a source configuration s and target configuration t.
