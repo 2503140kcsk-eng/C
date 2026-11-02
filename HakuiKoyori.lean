@@ -1,9 +1,10 @@
-/-
-  Hakui Koyori Number — milestone 0
-  A finite, set-theory-free diagonal construction over a small arithmetic
-  language of total unary programs.
+import AssistantMachine
 
-  This file intentionally makes no claim about the Large Number Garden Number.
+/- 
+  Hakui Koyori Number — milestone 0 plus the M1 machine extension.
+  M0 remains a finite set-theory-free diagonal construction over a small
+  arithmetic language. M1 adds an explicit two-counter machine Busy Beaver
+  candidate; its verification status is the GitHub Actions status of this commit.
 -/
 
 namespace HakuiKoyori
@@ -152,15 +153,12 @@ def tenTower : Nat → Nat
 def firstHarvest : Nat :=
   diagonal (tenTower 10)
 
-/--
-Milestone-0 Hakui Koyori Number candidate:
-diagonalize again at the first harvest.
--/
+/-- Milestone-0 HKN candidate: diagonalize again at the first harvest. -/
 def hakuiKoyoriNumber : Nat :=
   diagonal firstHarvest
 
 /--
-Main theorem: HKN_0 exceeds every program in this explicit arithmetic
+M0 main theorem: HKN_0 exceeds every program in this explicit arithmetic
 language whose syntax depth is at most firstHarvest, evaluated at firstHarvest.
 -/
 theorem hakuiKoyoriNumber_dominates_catalogue
@@ -170,12 +168,37 @@ theorem hakuiKoyoriNumber_dominates_catalogue
   exact diagonal_gt_assistant firstHarvest p
     (mem_assistants_of_depth_le p h)
 
-/--
-The candidate beats the identity assistant at the first-harvest input.
-The identity program evaluates to the input itself; this formulation avoids
-normalizing the enormous closed term defining firstHarvest.
--/
+/-- HKN_0 exceeds the identity assistant at the first-harvest input. -/
 theorem hakuiKoyoriNumber_gt_identity_at_firstHarvest :
     evaluate AssistantCode.input firstHarvest < hakuiKoyoriNumber :=
   hakuiKoyoriNumber_dominates_catalogue AssistantCode.input (Nat.zero_le _)
+
+/--
+M1 candidate: one more than every halting output of a machine whose natural
+program code is at most HKN_0, on input HKN_0.
+-/
+noncomputable def hakuiKoyoriNumber1 : Nat :=
+  AssistantMachine.busyBeaver hakuiKoyoriNumber hakuiKoyoriNumber
+
+/-- M1 diagonal theorem: the new candidate is strictly greater than HKN_0. -/
+theorem hakuiKoyoriNumber1_gt_hakuiKoyoriNumber :
+    hakuiKoyoriNumber < hakuiKoyoriNumber1 := by
+  unfold hakuiKoyoriNumber1
+  exact AssistantMachine.busyBeaver_gt_input
+    hakuiKoyoriNumber hakuiKoyoriNumber
+
+/--
+Every halting machine with code at most HKN_0, when run on input HKN_0,
+produces an output strictly below HKN_1.
+-/
+theorem hakuiKoyoriNumber1_dominates_bounded_machine_catalogue
+    (code output : Nat) (hcode : code ≤ hakuiKoyoriNumber)
+    (hhalts :
+      AssistantMachine.HaltsWithOutput
+        (AssistantMachine.decodeProgram code)
+        hakuiKoyoriNumber output) :
+    output < hakuiKoyoriNumber1 := by
+  unfold hakuiKoyoriNumber1
+  exact AssistantMachine.busyBeaver_exceeds_catalogue hcode hhalts
+
 end HakuiKoyori
