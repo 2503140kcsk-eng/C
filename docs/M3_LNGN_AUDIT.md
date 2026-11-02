@@ -46,12 +46,12 @@ The source summary specifies a surjective coding
 
 using Cantor normal forms.
 
-For an `⌜L⌝)-formula `P`, `IsDefinition(P)` says that there is exactly one `x` satisfying `P`.
+For an `⌜L⌝`-formula `P`, `IsDefinition(P)` says that there is exactly one `x` satisfying `P`.
 
 The source's predicate `Definable(m,i,P)` requires, in substance:
 
-1. `i∈ℕ`
-2. `P` is an `⌜L⌝)-formula;
+1. `i∈ℕ`;
+2. `P` is an `⌜L⌝`-formula;
 3. `U(CNF(i)) ⊨ IsDefinition(P)`;
 4. `U(CNF(i)) ⊨ P[m/x]`.
 
