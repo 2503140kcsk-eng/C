@@ -1,6 +1,5 @@
 import HakuiKoyori.AssistantMachine
 import Mathlib.Data.Nat.Prime.Basic
-import HakuiKoyori.Simulation
 
 /-!
 # Compiler foundations (M2)
@@ -15,8 +14,8 @@ The prime-power representation is
 
 The theorems below establish the arithmetic part of the representation:
 incrementing a virtual register multiplies the code by its assigned prime;
-decrementing a positive virtual register divides out that prime; and the
-first prime can be tested by divisibility exactly.
+decrementing a positive virtual register divides out that prime; and
+divisibility by 2, 3, and 5 tests the corresponding virtual register exactly.
 
 This is a verified foundation, not yet the emitted low-level compiler.
 In particular, this file does not claim that the arithmetic identities
