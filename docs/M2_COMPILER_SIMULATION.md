@@ -70,13 +70,16 @@ machine description. A compiler must consume a finite typed table (or
 bounded codes together with proofs that every next state and written symbol
 remain in range).
 
-The current `FiniteTuringMachine` structure proves only
-`0 < alphabetSize`. The unary I/O contract additionally needs a designated
-nonblank symbol; with blank fixed to digit `0` and unary fixed to digit `1`,
-the compiler signature must carry `hUnary : 1 < M.alphabetSize` (or an
-explicit nonzero `Fin M.alphabetSize` symbol). This witness is not currently
-part of `FiniteTuringMachine`, so it remains a formalization obligation and
-must not be silently inferred from `alphabetSize_pos`.
+The base `FiniteTuringMachine` structure proves only
+`0 < alphabetSize`; that alone does not designate a unary input/output
+symbol. The current source adds a separate `UnaryInputSpec M`, carrying
+`unarySymbol : Fin M.alphabetSize` and
+`unarySymbol.val = 1`. Because a `Fin M.alphabetSize` value is strictly
+below `alphabetSize`, this witness supplies the missing condition
+`1 < M.alphabetSize`. Any compiler theorem using the unary I/O contract
+must take this `UnaryInputSpec` (or an equivalent explicit witness) as an
+argument; it must not infer a nonblank symbol from
+`FiniteTuringMachine.alphabetSize_pos` alone.
 
 #### Stage-A PUSH and POP algorithms
 
