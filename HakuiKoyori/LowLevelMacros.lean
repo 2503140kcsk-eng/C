@@ -599,6 +599,7 @@ theorem divRemAux_length_exact
   | succ fuel ih =>
       simp [divRemAux, divRemAuxLength, rebaseBlock_length,
         transferBlock_length, ih]
+      omega
 
 /-- For a positive starting residue, every handler uses multiplier p. -/
 theorem divRemAuxLength_pos_residue
