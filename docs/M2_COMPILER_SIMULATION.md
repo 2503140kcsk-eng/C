@@ -185,14 +185,18 @@ the physical two-counter integer. For empty input `1` is not divisible by
 counter to zero.
 
 A halting TM must leave `1^v` beginning at the current head cell and
-followed immediately by blank. The cleanup first inspects the current
-symbol stored in finite control and increments `T` iff it is `1`. It then
-scans `R` using `L` as scratch, preserving `T`: each popped `1` increments
-`T`; blank ends the scan; any other symbol violates the output precondition.
-Finally it clears `L` and `R` by decrement-to-zero loops that need no
-scratch. The resulting virtual registers are `(T,L,R)=(v,0,0)`, so the
-Stage-B boundary code is `primeCode(v,0,0)=2^v`. The explicit output
-representation is `OutputCode(v)=2^v`, with decoder relation
+followed immediately by blank. The cleanup first clears `L` and inspects
+the current symbol stored in finite control. If the current symbol is blank,
+it sets `T=0` and skips the right-stack scan: the output prefix has already
+ended at the head cell. If the current symbol is `1`, it sets `T=1` and
+scans `R` using `L` as scratch, incrementing `T` for each consecutive
+`1` until the first blank. Any other current symbol, or any nonblank
+non-`1` symbol before that terminating blank, violates the output
+precondition. Symbols beyond the first blank are never counted. The
+cleanup then clears `R` with a self-decrement loop. The resulting virtual
+registers are `(T,L,R)=(v,0,0)`, so the Stage-B boundary code is
+`primeCode(v,0,0)=2^v`. The explicit output representation is
+`OutputCode(v)=2^v`, with decoder relation
 `OutputRep(v,z) ↔ z=2^v`; injectivity of powers of two gives uniqueness
 of the decoded source value.
 
