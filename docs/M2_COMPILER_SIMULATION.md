@@ -111,21 +111,22 @@ natural-number counter, giving a concrete termination measure.
 
 CompilerCore.lean formalizes the intermediate instruction semantics,
 primeCode, the three increment identities, the positive-exponent decrement
-identities, and the exact divisibility test for register 0 (prime 2).
-The corresponding divisibility lemmas for primes 3 and 5, the explicit
-low-level code blocks, their offset relocation, and their termination proofs
-remain required.
+identities, and all three exact divisibility tests: 2 divides the code iff
+r0 is positive, 3 divides it iff r1 is positive, and 5 divides it iff r2 is
+positive. The explicit low-level code blocks, their offset relocation, and
+their termination proofs remain required.
 
 Required Stage-B lemmas:
-1. two_dvd_primeCode_iff (implemented): 2 ∣ N ↔ 0 < a.
-2. 3 ∣ N ↔ 0 < b and 5 ∣ N ↔ 0 < c.
-3. Low-level multiply-by-constant blocks terminate and implement
+1. `two_dvd_primeCode_iff` (implemented): 2 ∣ N ↔ 0 < a.
+2. `three_dvd_primeCode_iff` (implemented): 3 ∣ N ↔ 0 < b.
+3. `five_dvd_primeCode_iff` (implemented): 5 ∣ N ↔ 0 < c.
+4. Low-level multiply-by-constant blocks terminate and implement
    N := p*N with scratch restored to zero.
-4. Low-level division blocks terminate and implement exact quotient/remainder.
-5. The compiler's label allocator relocates every local jump to the correct
+5. Low-level division blocks terminate and implement exact quotient/remainder.
+6. The compiler's label allocator relocates every local jump to the correct
    global instruction index.
-6. Each source instruction is simulated by a finite target run.
-7. The source/target relation is invariant at every macro boundary.
+7. Each source instruction is simulated by a finite target run.
+8. The source/target relation is invariant at every macro boundary.
 
 ### Stage C: output restoration and the composite theorem
 
@@ -228,15 +229,16 @@ The starred repositories are not executables exposed through this chat. Their pu
 
 Proved in this branch's source: three-register machine syntax,
 configuration, deterministic one-step semantics, positive prime code,
-increment/decrement arithmetic identities, and
-two_dvd_primeCode_iff.
+increment/decrement arithmetic identities, and the three divisibility
+characterizations `two_dvd_primeCode_iff`, `three_dvd_primeCode_iff`, and
+`five_dvd_primeCode_iff`.
 
-Not yet proved: full TM-to-three-register compiler; divisibility
-characterizations for 3 and 5; code generation into the existing two-counter
-instruction list; correctness and termination of generated low-level blocks;
+Not yet proved: the full TM-to-three-register compiler; code generation into
+the existing two-counter instruction list; correctness and termination of
+generated low-level multiplication/division blocks; label relocation;
 macro-step simulation; halting/output equivalence; divergence preservation.
 
 The branch is an M2 foundation milestone, not a completed universal
-compiler. The next implementation task is to complete the two remaining
-prime-divisibility lemmas, then encode and prove the fixed-constant division
-and multiplication blocks as actual lists of the M1 instruction datatype.
+compiler. The next implementation task is to encode and prove the
+fixed-constant division and multiplication blocks as actual lists of the
+M1 instruction datatype, with explicit decreasing loop measures.
