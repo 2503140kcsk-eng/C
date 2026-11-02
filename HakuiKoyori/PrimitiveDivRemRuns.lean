@@ -115,8 +115,8 @@ theorem runN_divRemAux_terminal_segment
 theorem getElem?_replicate_segment
     {α : Type} (pre suffix : List α) (count index : Nat)
     (instruction : α) (hindex : index < count) :
-    List.getElem? (pre ++ (List.replicate count instruction ++ suffix))
-      (pre.length + index) = some instruction := by
+    (pre ++ (List.replicate count instruction ++ suffix))[pre.length + index]? =
+      some instruction := by
   rw [List.getElem?_append_right
     (l₁ := pre) (l₂ := List.replicate count instruction ++ suffix)
     (i := pre.length + index) (by omega)]
@@ -145,7 +145,7 @@ theorem relocatedTRHandler_eq
               (resolveTarget blocks root (.sourcePC destinationPC))] ++
             (List.replicate m (Instruction.inc Counter.left) ++
               [Instruction.inc Counter.left,
-               Instruction.decJump Counter.left (root + 1)])) := by
+               Instruction.decJump Counter.left (root + 1)]))) := by
   simp [relocatedTRHandler, transferBlock, rebaseBlock,
     rebaseInstruction, rebaseTarget, identityJump, relocateInstruction,
     resolveTarget, Nat.add_assoc]
@@ -191,10 +191,9 @@ theorem runN_relocatedTRHandler
           (residueCode ++
             ([jumpInc, jump] ++
               (transferCode ++ [finalInc, finalJump]))) := by
-    change relocatedTRHandler blocks root m r destinationPC = _
-    rw [relocatedTRHandler_eq]
-    simp [entry, residueCode, jumpInc, jump, transferCode,
-      finalInc, finalJump]
+    simpa [handler, entry, residueCode, jumpInc, jump, transferCode,
+      finalInc, finalJump] using
+        relocatedTRHandler_eq blocks root m r destinationPC
   have hlen : handler.length = m + r + 5 := by
     rw [relocatedTRHandler_length]
   have hEntryRaw : handler[0]? = some entry := by
@@ -263,7 +262,7 @@ theorem runN_relocatedTRHandler
       program[pre.length]? =
         some (Instruction.decJump .right (pre.length + 3 + r)) := by
     have h := hEmbed 0 (by rw [hlen]; omega)
-    have haddr : root + (1 + (3 + r)) = root + (4 + r) := by omega
+    have haddr : root + 1 + (3 + r) = root + 1 + 3 + r := by omega
     simpa [entry, hprefix, haddr] using h.trans hEntryRaw
   have hResidue : ∀ i, i < r →
       program[pre.length + 1 + i]? =
