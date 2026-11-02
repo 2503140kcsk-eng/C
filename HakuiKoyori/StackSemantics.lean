@@ -50,7 +50,7 @@ theorem stackPop_stackPush (base digit restCode : Nat)
     simp
 
 /-- Empty stack has blank digit zero and empty tail. -/
-@[simp] theorem stackPop_empty (base : Nat) (hbase : 0 < base) :
+@[simp] theorem stackPop_empty (base : Nat) (_hbase : 0 < base) :
     stackPop base 0 = (0, 0) := by
   simp [stackPop]
 
