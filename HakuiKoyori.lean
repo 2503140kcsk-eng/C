@@ -1,4 +1,5 @@
 import HakuiKoyori.AssistantMachine
+import HakuiKoyori.StackSemantics
 import HakuiKoyori.Simulation
 import HakuiKoyori.CompilerCore
 import HakuiKoyori.LowLevelMacros
