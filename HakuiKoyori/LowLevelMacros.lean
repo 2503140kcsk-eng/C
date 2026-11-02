@@ -91,7 +91,6 @@ def mulBlock (p : Nat) (destination : JumpTarget) : TemplateBlock :=
 theorem mulBlock_length (p : Nat) (destination : JumpTarget) :
     (mulBlock p destination).length = p + 9 := by
   simp [mulBlock, identityJump]
-  omega
 
 /--
 Transfer block: on entry left=0 and right=q, return left=m*q+r and right=0.
@@ -170,20 +169,20 @@ def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
 
 /-- Prime assigned to each virtual register in the M2 representation. -/
 def registerPrime : Register3 → Nat
-  | .r0 => 2
-  | .r1 => 3
-  | .r2 => 5
+  | Register3.r0 => 2
+  | Register3.r1 => 3
+  | Register3.r2 => 5
 
 /-- Compile one virtual three-register instruction to a symbolic two-counter block. -/
 def compileInstruction3 (pc : Nat) : Instruction3 → TemplateBlock
-  | .inc which =>
+  | Instruction3.inc which =>
       mulBlock (registerPrime which) (.sourcePC (pc + 1))
-  | .decJump which target =>
+  | Instruction3.decJump which target =>
       divRemBlock (registerPrime which) (.sourcePC target) (.sourcePC (pc + 1))
 
 /-- Symbolic block sequence produced for a complete finite three-register program. -/
 def compileBlocks3 (program : Program3) : List TemplateBlock :=
-  (enumerateBlocks program 0).map fun (pc, instruction) =>
+  (enumerateBlocks (α := Instruction3) program 0).map fun (pc, instruction) =>
     compileInstruction3 pc instruction
 
 /-- Whole-program compiler into the existing two-counter instruction datatype. -/
