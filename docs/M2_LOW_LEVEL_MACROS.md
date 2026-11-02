@@ -240,102 +240,102 @@ The compiler proof must establish:
 
 ## 5. Three-register stack macros for the explicit-current TM model
 
-The Lean source model in `HakuiKoyori/StackSemantics.lean` is authoritative:
-`TMConfiguration` has fields `state`, `leftStack`, `current`, and
-`rightStack`. The two stack codes contain cells **strictly to the left and
-strictly to the right** of the head. The current cell is the separate
-`current` field. The convention in which the top of `rightStack` is also
+The Lean source model in \`HakuiKoyori/StackSemantics.lean\` is authoritative:
+\`TMConfiguration\` has fields \`state\`, \`leftStack\`, \`current\`, and
+\`rightStack\`. The two stack codes contain cells strictly to the left and
+strictly to the right of the head. The current cell is the separate
+\`current\` field. The convention in which the top of \`rightStack\` is also
 the current cell is not used.
 
-Let the finite tape alphabet `Γ` include the blank symbol `□`. Set
-`β = |Γ|`, and identify the symbols with digits `0,...,β-1`, with
-`d(□)=0`. The code in `FiniteTM.lean` uses `Fin alphabetSize` directly,
-so `alphabetSize=β` and the value of a symbol is its stack digit. Every
-symbol digit is strictly smaller than `β`. A stack code has its nearest
+Let the finite tape alphabet \`Γ\` include the blank symbol \`□\`. Set
+\`β = |Γ|\`, and identify the symbols with digits \`0,...,β-1\`, with
+\`d(□)=0\`. The code in \`FiniteTM.lean\` uses \`Fin alphabetSize\` directly,
+so \`alphabetSize=β\` and the value of a symbol is its stack digit. Every
+symbol digit is strictly smaller than \`β\`. A stack code has its nearest
 cell in the least-significant digit:
 
-```text
+\`\`\`text
 enc([])        = 0
 enc(s :: tail) = d(s) + β * enc(tail)
-```
+\`\`\`
 
-Thus a stack pop returns `(code mod β, code / β)`; the empty stack pops
-as blank `(0,0)`. The current symbol is not read from either stack.
+Thus a stack pop returns \`(code mod β, code / β)\`; the empty stack pops
+as blank \`(0,0)\`. The current symbol is not read from either stack.
 
 Use the virtual register assignment
-`r0 = T` (temporary register and final unary-output accumulator),
-`r1 = L` (left stack),
-`r2 = R` (right stack).
-At ordinary simulated TM-step boundaries, `T=0`. The program counter
-encodes the pair `(q,a)` consisting of the finite TM state and the current
+\`r0 = T\` (temporary register and final unary-output accumulator),
+\`r1 = L\` (left stack),
+\`r2 = R\` (right stack).
+At ordinary simulated TM-step boundaries, \`T=0\`. The program counter
+encodes the pair \`(q,a)\` consisting of the finite TM state and the current
 symbol. The source must be a finite transition table over finite state and
 alphabet types; an arbitrary function
-`Nat → Nat → Option TMAction` is only a semantic convenience and is not
+\`Nat → Nat → Option TMAction\` is only a semantic convenience and is not
 itself a finite, effective compiler input.
 
-A stack operation acts on one data register `X∈{L,R}` and a distinct
-scratch register `S`. At ordinary TM steps use `S=T). At final output
-scanning, use `S=L) so that the output accumulator `T) is preserved.
+A stack operation acts on one data register \`X∈{L,R}\` and a distinct
+scratch register \`S\`. At ordinary TM steps use \`S=T\`. At final output
+scanning, use \`S=L\` so that the output accumulator \`T\` is preserved.
 
 ### PUSH in the three-register intermediate machine
 
-For digit `d<β`, `PUSH(X,d)` starts with `(X,S)=(n,0)`:
+For digit \`d<β\`, \`PUSH(X,d)\` starts with \`(X,S)=(n,0)\`:
 
-1. While `X>0`, decrement `X) once and increment `S) exactly `β)
+1. While \`X>0\`, decrement \`X\` once and increment \`S\` exactly \`β\`
    times.
-2. While `S>0`, decrement `S) once and increment `X) once.
-3. Increment `X) exactly `d) times.
+2. While \`S>0\`, decrement \`S\` once and increment \`X\` once.
+3. Increment \`X\` exactly \`d\` times.
 
-After `k) iterations of step 1 the loop invariant is
-`X=n-k` and `S=βk`. At its exit `(X,S)=(0,βn)). Step 2 transfers
-the entire scratch value back, yielding `(βn,0)); step 3 yields
-`(βn+d,0)). Hence `PUSH(X,d)` implements
-`X := β*X_old+d` and restores the scratch register to zero.
+After \`k\` iterations of step 1 the loop invariant is
+\`X=n-k\` and \`S=βk\`. At its exit \`(X,S)=(0,βn)\`. Step 2 transfers
+the entire scratch value back, yielding \`(βn,0)\`; step 3 yields
+\`(βn+d,0)\`. Hence \`PUSH(X,d)\` implements
+\`X := β*X_old+d\` and restores the scratch register to zero.
 
-The first loop terminates because `X) decreases strictly on each
-iteration; the transfer loop terminates because `S) decreases strictly.
+The first loop terminates because \`X\` decreases strictly on each
+iteration; the transfer loop terminates because \`S\` decreases strictly.
 The finite straight-line increments between loop headers cannot diverge.
 
 ### POP in the three-register intermediate machine
 
-`POP(X;S)` starts with `(X,S)=(n,0)) and a finite-control residue
-state `j=0), where `0≤j<β). While `X>0), it decrements `X) once.
+\`POP(X;S)\` starts with \`(X,S)=(n,0)\` and a finite-control residue
+state \`j=0\`, where \`0≤j<β\`. While \`X>0\`, it decrements \`X\` once.
 It then updates finite control as follows:
 
-- if `j<β-1`, move to residue state `j+1);
-- if `j=β-1), increment `S) once and return to residue state `0).
+- if \`j<β-1\`, move to residue state \`j+1\`;
+- if \`j=β-1\`, increment \`S\` once and return to residue state \`0\`.
 
-When `X=0), control falls through to the handler for the current residue
-`j). After exactly `k) consumed units the invariant is
-`X=n-k`, `S=⌊k/β⌋), and `j=k mod β`. Therefore the exit state is
-`X=0`, `S=⌊n/β⌋), and `j=n mod β`.
+When \`X=0\`, control falls through to the handler for the current residue
+\`j\`. After exactly \`k\` consumed units the invariant is
+\`X=n-k\`, \`S=⌊k/β⌋\`, and \`j=k mod β\`. Therefore the exit state is
+\`X=0\`, \`S=⌊n/β⌋\`, and \`j=n mod β\`.
 
-The handler transfers `S) back to `X) one unit at a time, restoring
-`S=0). The residue `j) remains in finite control and identifies the
-popped symbol. Thus `POP(X;S)` implements
-`X := X_old / β`, returns `X_old mod β` in finite control, and restores
-the scratch register. The main loop terminates by strict decrease of `X);
-the quotient-transfer loop terminates by strict decrease of `S).
-The residue is in the finite range `0,...,β-1), so its dispatch has
+The handler transfers \`S\` back to \`X\` one unit at a time, restoring
+\`S=0\`. The residue \`j\` remains in finite control and identifies the
+popped symbol. Thus \`POP(X;S)\` implements
+\`X := X_old / β\`, returns \`X_old mod β\` in finite control, and restores
+the scratch register. The main loop terminates by strict decrease of \`X\`;
+the quotient-transfer loop terminates by strict decrease of \`S\`.
+The residue is in the finite range \`0,...,β-1\`, so its dispatch has
 finitely many branches.
 
-These PUSH and POP algorithms are **Stage A three-register code**. They
-must be emitted as finite lists of the intermediate machine's own
-`inc/decJump` instructions. They are not the Stage B two-counter
-`TR`/ `DIVREM` blocks from Sections 2–3; those blocks only appear after
-the Stage A program has been generated and compiled.
+These PUSH and POP algorithms are Stage A three-register code. They must
+be emitted as finite lists of the intermediate machine's own
+\`inc/decJump\` instructions. They are not the Stage B two-counter
+\`TR\` or \`DIVREM\` blocks from Sections 2–3; those blocks only appear
+after the Stage A program has been generated and compiled.
 
 ### Implementing one TM transition
 
-The finite-control label is `(q,a)), so the current symbol is already
+The finite-control label is \`(q,a)\`, so the current symbol is already
 known without popping either stack. For a transition
-`(q,a) ↦ (q',b,move)`:
+\`(q,a) ↦ (q',b,move)\`:
 
-- **Stay:** jump to control label `(q',b)`; leave both stacks unchanged.
-- **Right:** execute `PUSH(L,d(b))`, then `POP(R;T)). The returned
-  residue selects the new current symbol `a'); jump to `(q',a')).
-- **Left:** execute `PUSH(R,d(b))`, then `POP(L;T)). The returned
-  residue selects the new current symbol `a'); jump to `(q',a')).
+- **Stay:** jump to control label \`(q',b)\`; leave both stacks unchanged.
+- **Right:** execute \`PUSH(L,d(b))\`, then \`POP(R;T)\`. The returned
+  residue selects the new current symbol \`a'\`; jump to \`(q',a')\`.
+- **Left:** execute \`PUSH(R,d(b))\`, then \`POP(L;T)\`. The returned
+  residue selects the new current symbol \`a'\`; jump to \`(q',a')\`.
 
 This agrees with the Lean equations: a right move pushes the written old
 current symbol onto the left stack and pops the right stack; a left move
@@ -345,61 +345,61 @@ Every transition must preserve the finite state and alphabet bounds.
 ## 6. Input/output contract and bootstrap
 
 The source TM is deterministic, one-tape, and has a finite alphabet
-`Γ` containing blank `□` and a distinguished unary symbol `1).
-The blank digit is zero; the unary digit `d₁=d(1)) is nonzero.
+\`Γ\` containing blank \`□\` and a distinguished unary symbol \`1\`.
+The blank digit is zero; the unary digit \`d₁=d(1)\` is nonzero.
 
 The target's initial input code stores the entire unary word in the right
 stack, including the head cell. Define
 
-```text
+\`\`\`text
 ρ(n) = d₁ * (1 + β + ... + β^(n-1)),  ρ(0)=0
-```
+\`\`\`
 
-and start with virtual registers `(T,L,R)=(0,0,ρ(n))). The compiler entry
-block executes `POP(R;T)` to move the first symbol into finite control.
-For `n=0), it returns blank and leaves `R=0); for `n>0), it returns
-`1` and leaves the remaining `n-1) symbols in `R). Thus the exact
+and start with virtual registers \`(T,L,R)=(0,0,ρ(n))\`. The compiler entry
+block executes \`POP(R;T)\` to move the first symbol into finite control.
+For \`n=0\`, it returns blank and leaves \`R=0\`; for \`n>0\`, it returns
+\`1\` and leaves the remaining \`n-1\` symbols in \`R\`. Thus the exact
 M1 input code for the Stage B register representation is
 
-```text
+\`\`\`text
 inputCode(n) = primeCode(0,0,ρ(n)) = 5^(ρ(n))
-```
+\`\`\`
 
 The bootstrap must be present in the generated finite program: the M1
 initial program counter cannot itself depend on the input's first symbol.
-After the bootstrap, the finite-control label is `(q₀,current)), and the
+After the bootstrap, the finite-control label is \`(q₀,current)\`, and the
 two stack registers represent only the cells strictly to either side of
 the head.
 
-A halting TM is required to leave the unary result `1^v) beginning at the
-current head cell and followed immediately by blank. The cleanup block
+A halting TM is required to leave the unary result \`1^v\` beginning at
+the current head cell and followed immediately by blank. The cleanup block
 first inspects the current symbol stored in finite control: it increments
-`T) once if the current symbol is `1), and zero times if it is blank.
+\`T\` once if the current symbol is \`1\`, and zero times if it is blank.
 A different nonblank current symbol violates the output precondition.
-It then scans `R` using `L` as scratch, preserving `T`: each popped
-`1` increments `T); the first blank ends the scan; any other symbol
+It then scans \`R\` using \`L\` as scratch, preserving \`T\`: each popped
+\`1\` increments \`T\`; the first blank ends the scan; any other symbol
 before that blank violates the output precondition. Finally, it clears
-`L` and `R` by loops that decrement each register to zero; these clearing
-loops need no scratch register, so `T) remains equal to `v). The final
-virtual register tuple is `(T,L,R)=(v,0,0)).
+\`L\` and \`R\` by loops that decrement each register to zero; these clearing
+loops need no scratch register, so \`T\` remains equal to \`v\`. The final
+virtual register tuple is \`(T,L,R)=(v,0,0)\`.
 
 Stage B therefore emits the exact target output code
-`primeCode(v,0,0)=2^v). The verified compiler contract uses the explicit
+\`primeCode(v,0,0)=2^v\`. The verified compiler contract uses the explicit
 output representation
 
-```text
+\`\`\`text
 OutputCode(v) := 2^v
 
 TMHaltsWithUnaryOutput(M,n,v)
   iff
 AssistantMachine.HaltsWithOutput
   (compileTM M) (inputCode(n)) (OutputCode(v))
-```
+\`\`\`
 
-The decoder relation is `OutputRep(v,z) iff z=2^v); injectivity of powers
-of two gives uniqueness of the decoded `v`. This is exact value preservation
+The decoder relation is \`OutputRep(v,z) iff z=2^v\`; injectivity of powers
+of two gives uniqueness of the decoded \`v\`. This is exact value preservation
 under a stated codec, not a claim that the physical left counter equals
-`v). A raw-counter normalizer remains a separate theorem.
+\`v\`. A raw-counter normalizer remains a separate theorem.
 
 ## 7. Concrete simulation and divergence theorems
 
