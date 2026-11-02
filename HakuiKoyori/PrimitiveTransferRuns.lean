@@ -45,7 +45,8 @@ theorem runN_incLeft_segment
   | zero =>
       simp [runN]
   | succ count ih =>
-      have hfirst := hget 0 (by omega)
+      have hfirst : program[base]? = some (.inc .left) := by
+        simpa using hget 0 (by omega)
       have hstep :
           AssistantMachine.step program ⟨base, a, b⟩ =
             some ⟨base + 1, a + 1, b⟩ := by
@@ -111,13 +112,21 @@ theorem concreteTR_remainder_get
     rw [concreteTR_eq]
     simp [prefixR, List.append_assoc]
   have hlength : prefixR.length = 1 := by simp [prefixR]
+  have hreplicateLength :
+      (List.replicate r (.inc .left)).length = r := by simp
   rw [hshape]
+  change (prefixR ++
+    (List.replicate r (.inc .left) ++
+      ([.inc .left, .decJump .left destination] ++
+        (List.replicate m (.inc .left) ++
+          [.inc .left, .decJump .left 0]))))[1 + i]? =
+      some (.inc .left)
   rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + i)
     (by rw [hlength]; omega)]
   rw [show 1 + i - prefixR.length = i by rw [hlength]; omega]
   rw [List.getElem?_append_left
     (l₁ := List.replicate r (.inc .left)) (i := i)
-    (by simp; exact hi)]
+    (by rw [hreplicateLength]; exact hi)]
   exact List.getElem?_replicate_of_lt hi
 
 /-- The m-increment transfer segment occupies positions 3+r through 3+r+m-1. -/
@@ -137,22 +146,29 @@ theorem concreteTR_transfer_get
     rw [concreteTR_eq]
     simp [prefixM, List.append_assoc]
   have hlength : prefixM.length = 3 + r := by
-    simp [prefixM]
+    simp only [prefixM, List.length_append, List.length_cons,
+      List.length_nil, List.length_replicate]
     omega
+  have hreplicateLength :
+      (List.replicate m (.inc .left)).length = m := by simp
   rw [hshape]
+  change (prefixM ++
+    (List.replicate m (.inc .left) ++
+      [.inc .left, .decJump .left 0]))[3 + r + i]? =
+      some (.inc .left)
   rw [List.getElem?_append_right (l₁ := prefixM) (i := 3 + r + i)
     (by rw [hlength]; omega)]
   rw [show 3 + r + i - prefixM.length = i by rw [hlength]; omega]
   rw [List.getElem?_append_left
     (l₁ := List.replicate m (.inc .left)) (i := i)
-    (by simp; exact hi)]
+    (by rw [hreplicateLength]; exact hi)]
   exact List.getElem?_replicate_of_lt hi
 
 /-- The remainder identity jump starts immediately after the r increments. -/
 theorem concreteTR_remainder_jump_get
     (m r destination : Nat) :
     (concreteTR m r destination)[1 + r]? = some (.inc .left) ∧
-    (concreteTR m r destination)[2 + r]? =
+    (concreteTR m r destination)[1 + r + 1]? =
       some (.decJump .left destination) := by
   let prefixR : Program :=
     [.decJump .right (3 + r)] ++ List.replicate r (.inc .left)
@@ -164,17 +180,29 @@ theorem concreteTR_remainder_jump_get
               [.inc .left, .decJump .left 0])) := by
     rw [concreteTR_eq]
     simp [prefixR, List.append_assoc]
-  have hlength : prefixR.length = 1 + r := by simp [prefixR]
+  have hlength : prefixR.length = 1 + r := by
+    simp [prefixR]
+    omega
   constructor
   · rw [hshape]
+    change (prefixR ++
+      ([.inc .left, .decJump .left destination] ++
+        (List.replicate m (.inc .left) ++
+          [.inc .left, .decJump .left 0])))[1 + r]? =
+        some (.inc .left)
     rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r)
       (by rw [hlength]; omega)]
     rw [show 1 + r - prefixR.length = 0 by rw [hlength]; omega]
     rfl
   · rw [hshape]
-    rw [List.getElem?_append_right (l₁ := prefixR) (i := 2 + r)
+    change (prefixR ++
+      ([.inc .left, .decJump .left destination] ++
+        (List.replicate m (.inc .left) ++
+          [.inc .left, .decJump .left 0])))[1 + r + 1]? =
+        some (.decJump .left destination)
+    rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r + 1)
       (by rw [hlength]; omega)]
-    rw [show 2 + r - prefixR.length = 1 by rw [hlength]; omega]
+    rw [show 1 + r + 1 - prefixR.length = 1 by rw [hlength]; omega]
     rfl
 
 /-- The final identity jump returns from the m-transfer loop to PC zero. -/
@@ -182,7 +210,7 @@ theorem concreteTR_final_jump_get
     (m r destination : Nat) :
     (concreteTR m r destination)[3 + r + m]? =
       some (.inc .left) ∧
-    (concreteTR m r destination)[4 + r + m]? =
+    (concreteTR m r destination)[3 + r + m + 1]? =
       some (.decJump .left 0) := by
   let prefixEnd : Program :=
     [.decJump .right (3 + r)] ++
@@ -195,18 +223,23 @@ theorem concreteTR_final_jump_get
     rw [concreteTR_eq]
     simp [prefixEnd, List.append_assoc]
   have hlength : prefixEnd.length = 3 + r + m := by
-    simp [prefixEnd]
+    simp only [prefixEnd, List.length_append, List.length_cons,
+      List.length_nil, List.length_replicate]
     omega
   constructor
   · rw [hshape]
+    change (prefixEnd ++ [.inc .left, .decJump .left 0])
+      [3 + r + m]? = some (.inc .left)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
       (i := 3 + r + m) (by rw [hlength]; omega)]
     rw [show 3 + r + m - prefixEnd.length = 0 by rw [hlength]; omega]
     rfl
   · rw [hshape]
+    change (prefixEnd ++ [.inc .left, .decJump .left 0])
+      [3 + r + m + 1]? = some (.decJump .left 0)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
-      (i := 4 + r + m) (by rw [hlength]; omega)]
-    rw [show 4 + r + m - prefixEnd.length = 1 by rw [hlength]; omega]
+      (i := 3 + r + m + 1) (by rw [hlength]; omega)]
+    rw [show 3 + r + m + 1 - prefixEnd.length = 1 by rw [hlength]; omega]
     rfl
 
 /-- One positive-B loop round of the literal TR code adds m to A and consumes one B. -/
@@ -281,7 +314,7 @@ theorem concreteTR_outer_loop
               ⟨0, a + m, q⟩ := by simp [hround]
         _ = some ⟨0, a + m + m * q, 0⟩ := hrest
         _ = some ⟨0, a + m * (q + 1), 0⟩ := by
-              congr 1 <;> ring
+              simp [Nat.mul_succ, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 /-- The zero-B branch adds the finite residue r and exits at destination. -/
 theorem concreteTR_remainder_run
