@@ -225,17 +225,17 @@ theorem concreteTR_final_jump_get
       List.length_nil, List.length_replicate] <;> omega
   constructor
   · rw [hshape]
-    change List.getElem? (prefixEnd ++
+    change ((prefixEnd ++
       [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
-      (3 + r + m) = some (Instruction.inc Counter.left)
+        [3 + r + m]?) = some (Instruction.inc Counter.left)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
       (i := 3 + r + m) (by omega)]
     rw [show 3 + r + m - prefixEnd.length = 0 by omega]
     rfl
   · rw [hshape]
-    change List.getElem? (prefixEnd ++
+    change ((prefixEnd ++
       [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
-      (3 + r + m + 1) = some (Instruction.decJump Counter.left 0)
+        [3 + r + m + 1]?) = some (Instruction.decJump Counter.left 0)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
       (i := 3 + r + m + 1) (by omega)]
     rw [show 3 + r + m + 1 - prefixEnd.length = 1 by omega]
@@ -266,8 +266,7 @@ theorem concreteTR_positive_round
           some ⟨0, a + m, b⟩ := by
     exact runN_identityJumpLeft (concreteTR m r destination)
       (3 + r + m) 0 (a + m) b hjump₁
-      (by
-        convert hjump₂ using 1 <;> congr 1 <;> omega)
+      hjump₂
   calc
     runN (m + 3) (concreteTR m r destination)
         ⟨0, a, b + 1⟩ =
