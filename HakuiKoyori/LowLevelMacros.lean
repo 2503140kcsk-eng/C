@@ -330,7 +330,7 @@ theorem prefixLength_strict (blocks : List TemplateBlock)
     prefixLength blocks i < prefixLength blocks j := by
   induction blocks generalizing i j with
   | nil =>
-      simp [prefixLength] at hj
+      simp at hj
       omega
   | cons block rest ih =>
       cases i with
