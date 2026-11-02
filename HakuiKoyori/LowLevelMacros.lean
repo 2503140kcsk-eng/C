@@ -226,6 +226,55 @@ def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
 
 
 /-!
+
+/-!
+## Relocation semantics for nested labels
+
+These lemmas keep the three label classes distinct: local offsets are shifted,
+the enclosing macro's block-start label is fixed, and source-PC labels remain
+external until the whole-program block table is known.
+-/
+
+/-- Rebase followed by target resolution adds the nested offset only to local labels. -/
+theorem resolveTarget_rebase (blocks : List TemplateBlock)
+    (base nestedOffset : Nat) (target : JumpTarget) :
+    resolveTarget blocks base (rebaseTarget nestedOffset target) =
+      match target with
+      | .offset k => base + nestedOffset + k
+      | .blockStart => base
+      | .sourcePC pc =>
+          if pc < blocks.length then blockStart blocks pc else blocksLength blocks := by
+  cases target <;> simp [rebaseTarget, resolveTarget, Nat.add_assoc]
+
+/-- A nested local jump is relocated to the enclosing base plus its accumulated offset. -/
+theorem relocateInstruction_rebase_offset
+    (blocks : List TemplateBlock) (base nestedOffset k : Nat)
+    (which : Counter) :
+    relocateInstruction blocks base
+      (rebaseInstruction nestedOffset (.decJump which (.offset k))) =
+        .decJump which (base + nestedOffset + k) := by
+  simp [rebaseInstruction, rebaseTarget, relocateInstruction,
+    resolveTarget, Nat.add_assoc]
+
+/-- The enclosing macro-start label is invariant under nested rebasing. -/
+theorem relocateInstruction_rebase_blockStart
+    (blocks : List TemplateBlock) (base nestedOffset : Nat)
+    (which : Counter) :
+    relocateInstruction blocks base
+      (rebaseInstruction nestedOffset (.decJump which .blockStart)) =
+        .decJump which base := by
+  rfl
+
+/-- Source-PC labels are unaffected by nested rebasing and resolve globally. -/
+theorem relocateInstruction_rebase_sourcePC
+    (blocks : List TemplateBlock) (base nestedOffset pc : Nat)
+    (which : Counter) :
+    relocateInstruction blocks base
+      (rebaseInstruction nestedOffset (.decJump which (.sourcePC pc))) =
+        .decJump which
+          (if pc < blocks.length then blockStart blocks pc else blocksLength blocks) := by
+  rfl
+
 ## Flattening length and terminal-address bridge
 
 These lemmas establish that relocation changes labels but not block sizes,
