@@ -2,7 +2,7 @@ name: Lean proof check
 
 on:
   push:
-    branches: [main, "m1/**"]
+    branches: [main, "m1/**", "m2/**"]
   pull_request:
   workflow_dispatch:
 
@@ -44,3 +44,5 @@ jobs:
         run: lake env lean HakuiKoyori/Simulation.lean
       - name: Check compiler foundations
         run: lake env lean HakuiKoyori/CompilerCore.lean
+      - name: Check concrete low-level macros
+        run: lake env lean HakuiKoyori/LowLevelMacros.lean
