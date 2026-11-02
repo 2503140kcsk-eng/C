@@ -4,6 +4,7 @@ import HakuiKoyori.FiniteTM
 import HakuiKoyori.Simulation
 import HakuiKoyori.CompilerCore
 import HakuiKoyori.LowLevelMacros
+import HakuiKoyori.EmissionSemantics
 import HakuiKoyori.PrimitiveMacroRuns
 import HakuiKoyori.PrimitiveTransferRuns
 import HakuiKoyori.MacroSemantics
