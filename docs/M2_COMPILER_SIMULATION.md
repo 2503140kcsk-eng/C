@@ -128,6 +128,27 @@ Required Stage-B lemmas:
 7. Each source instruction is simulated by a finite target run.
 8. The source/target relation is invariant at every macro boundary.
 
+### Provenance and originality boundary
+
+The prime-exponent idea is **not claimed as a new invention**. Encoding
+several virtual counters in one natural number by distinct prime exponents,
+then implementing increment/decrement through multiplication/divisibility,
+is a classical Minsky-style construction. Standard accounts describe
+two-stack → multiple-counter → two-counter simulation and use prime
+factorization; the literature also warns that the exact instruction set
+matters. See Minsky, *Computation: Finite and Infinite Machines* (1967);
+Dudenhefner, *Certified Decision Procedures for Two-Counter Machines*
+(FSCD 2022); and Dudenhefner, *Constructive Many-one Reduction from the
+Halting Problem to Semi-unification* (2022).
+
+The project-specific synthesis here is the explicit composition:
+finite-alphabet tape stacks → a 3-register intermediate semantics →
+the repository's exact `inc/decJump` two-counter ISA, with a stated encoded
+unary input, unary output decoder, nonempty finite stuttering simulation,
+and a layered progress argument. This is a concrete formalization plan,
+not a claim of priority or publication-level novelty. The actual low-level
+blocks and their universal simulation theorem must still be proved in Lean.
+
 ### Stage C: output restoration and the composite theorem
 
 A final output convention must be fixed before claiming a value-preserving
