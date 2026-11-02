@@ -121,8 +121,8 @@ theorem concreteTR_remainder_get
           [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]))))[1 + i]? =
       some (Instruction.inc Counter.left)
   rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + i)
-    (by rw [hlength]; omega)]
-  rw [show 1 + i - prefixR.length = i by rw [hlength]; omega]
+    (by omega)]
+  rw [show 1 + i - prefixR.length = i by omega]
   rw [List.getElem?_append_left
     (l₁ := List.replicate r (Instruction.inc Counter.left)) (i := i)
     (by rw [hreplicateLength]; exact hi)]
@@ -156,8 +156,8 @@ theorem concreteTR_transfer_get
       [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]))[3 + r + i]? =
       some (Instruction.inc Counter.left)
   rw [List.getElem?_append_right (l₁ := prefixM) (i := 3 + r + i)
-    (by rw [hlength]; omega)]
-  rw [show 3 + r + i - prefixM.length = i by rw [hlength]; omega]
+    (by omega)]
+  rw [show 3 + r + i - prefixM.length = i by omega]
   rw [List.getElem?_append_left
     (l₁ := List.replicate m (Instruction.inc Counter.left)) (i := i)
     (by rw [hreplicateLength]; exact hi)]
@@ -189,8 +189,8 @@ theorem concreteTR_remainder_jump_get
           [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])))[1 + r]? =
         some (Instruction.inc Counter.left)
     rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r)
-      (by rw [hlength]; omega)]
-    rw [show 1 + r - prefixR.length = 0 by rw [hlength]; omega]
+      (by omega)]
+    rw [show 1 + r - prefixR.length = 0 by omega]
     rfl
   · rw [hshape]
     change (prefixR ++
@@ -199,8 +199,8 @@ theorem concreteTR_remainder_jump_get
           [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])))[1 + r + 1]? =
         some (Instruction.decJump Counter.left destination)
     rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r + 1)
-      (by rw [hlength]; omega)]
-    rw [show 1 + r + 1 - prefixR.length = 1 by rw [hlength]; omega]
+      (by omega)]
+    rw [show 1 + r + 1 - prefixR.length = 1 by omega]
     rfl
 
 /-- The final identity jump returns from the m-transfer loop to PC zero. -/
@@ -225,18 +225,20 @@ theorem concreteTR_final_jump_get
       List.length_nil, List.length_replicate] <;> omega
   constructor
   · rw [hshape]
-    change (prefixEnd ++ [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
-      [3 + r + m]? = some (Instruction.inc Counter.left)
+    change List.getElem? (prefixEnd ++
+      [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
+      (3 + r + m) = some (Instruction.inc Counter.left)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
-      (i := 3 + r + m) (by rw [hlength]; omega)]
-    rw [show 3 + r + m - prefixEnd.length = 0 by rw [hlength]; omega]
+      (i := 3 + r + m) (by omega)]
+    rw [show 3 + r + m - prefixEnd.length = 0 by omega]
     rfl
   · rw [hshape]
-    change (prefixEnd ++ [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
-      [3 + r + m + 1]? = some (Instruction.decJump Counter.left 0)
+    change List.getElem? (prefixEnd ++
+      [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
+      (3 + r + m + 1) = some (Instruction.decJump Counter.left 0)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
-      (i := 3 + r + m + 1) (by rw [hlength]; omega)]
-    rw [show 3 + r + m + 1 - prefixEnd.length = 1 by rw [hlength]; omega]
+      (i := 3 + r + m + 1) (by omega)]
+    rw [show 3 + r + m + 1 - prefixEnd.length = 1 by omega]
     rfl
 
 /-- One positive-B loop round of the literal TR code adds m to A and consumes one B. -/
