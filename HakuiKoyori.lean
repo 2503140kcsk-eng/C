@@ -3,6 +3,7 @@ import HakuiKoyori.Simulation
 import HakuiKoyori.CompilerCore
 import HakuiKoyori.LowLevelMacros
 
+import HakuiKoyori.MacroSemantics
 /- 
   Hakui Koyori Number — milestone 0 plus the M1 machine extension.
   M0 remains a finite set-theory-free diagonal construction over a small
@@ -205,4 +206,3 @@ theorem hakuiKoyoriNumber1_dominates_bounded_machine_catalogue
   exact AssistantMachine.busyBeaver_exceeds_catalogue hcode hhalts
 
 end HakuiKoyori
-import HakuiKoyori.MacroSemantics
