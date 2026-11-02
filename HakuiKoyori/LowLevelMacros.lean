@@ -233,6 +233,7 @@ theorem relocateRebasedBlock_getElem? (blocks : List TemplateBlock)
               (rebaseInstruction nestedOffset instruction))
           (block[i]?) := by
   simp [rebaseBlock]
+  rfl
 
 
 
