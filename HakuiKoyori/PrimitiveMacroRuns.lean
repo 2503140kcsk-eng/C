@@ -19,10 +19,10 @@ namespace Compiler
 open AssistantMachine
 
 /-- Execute exactly n primitive transitions, provided all exist. -/
-def runN (program : Program) : Nat → Configuration → Option Configuration
-  | 0, configuration => some configuration
-  | n + 1, configuration =>
-      (AssistantMachine.step program configuration).bind (runN program n)
+def runN : Nat → Program → Configuration → Option Configuration
+  | 0, _, configuration => some configuration
+  | n + 1, program, configuration =>
+      (AssistantMachine.step program configuration).bind (runN n program)
 
 theorem runN_add (n m : Nat) (program : Program) (configuration : Configuration) :
     runN (n + m) program configuration =
