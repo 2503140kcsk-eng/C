@@ -168,25 +168,27 @@ def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
     block.map (relocateInstruction blocks (blockStart blocks pc))
 
 /-- Prime assigned to each virtual register in the M2 representation. -/
-def registerPrime : Register3 → Nat
-  | Register3.r0 => 2
-  | Register3.r1 => 3
-  | Register3.r2 => 5
+def registerPrime : HakuiKoyori.Compiler.Register3 → Nat
+  | HakuiKoyori.Compiler.Register3.r0 => 2
+  | HakuiKoyori.Compiler.Register3.r1 => 3
+  | HakuiKoyori.Compiler.Register3.r2 => 5
 
 /-- Compile one virtual three-register instruction to a symbolic two-counter block. -/
-def compileInstruction3 (pc : Nat) : Instruction3 → TemplateBlock
-  | Instruction3.inc which =>
+def compileInstruction3 (pc : Nat) :
+    HakuiKoyori.Compiler.Instruction3 → TemplateBlock
+  | HakuiKoyori.Compiler.Instruction3.inc which =>
       mulBlock (registerPrime which) (.sourcePC (pc + 1))
-  | Instruction3.decJump which target =>
+  | HakuiKoyori.Compiler.Instruction3.decJump which target =>
       divRemBlock (registerPrime which) (.sourcePC target) (.sourcePC (pc + 1))
 
 /-- Symbolic block sequence produced for a complete finite three-register program. -/
-def compileBlocks3 (program : Program3) : List TemplateBlock :=
-  (enumerateBlocks (α := Instruction3) program 0).map fun (pc, instruction) =>
+def compileBlocks3 (program : HakuiKoyori.Compiler.Program3) : List TemplateBlock :=
+  (enumerateBlocks (α := HakuiKoyori.Compiler.Instruction3) program 0).map
+    fun (pc, instruction) =>
     compileInstruction3 pc instruction
 
 /-- Whole-program compiler into the existing two-counter instruction datatype. -/
-def compileProgram3 (program : Program3) : Program :=
+def compileProgram3 (program : HakuiKoyori.Compiler.Program3) : Program :=
   emitBlocks (compileBlocks3 program)
 
 end Compiler
