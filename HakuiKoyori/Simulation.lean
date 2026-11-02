@@ -112,6 +112,6 @@ theorem forwardSimulation_compose_explicit
     {stepA : A → Option A} {stepB : B → Option B} {stepC : C → Option C}
     {relAB : A → B → Prop} {relBC : B → C → Prop}
     (simAB : ForwardSimulation stepA stepB relAB)
-    (simBC : ForwardSimulation stepB stepC) :
+    (simBC : ForwardSimulation stepB stepC relBC) :
     ForwardSimulation stepA stepC (ComposeRelation relAB relBC) := by
   exact forwardSimulation_compose simAB simBC
