@@ -2,6 +2,8 @@ module
 
 public import HakuiKoyori.CompilerCore
 
+public section
+
 /-!
 # Concrete low-level instruction templates (M2)
 
@@ -85,24 +87,13 @@ theorem identityJump_correct (which : Counter) (target a b : Nat) :
         some ⟨target, a, b⟩ := by
   cases which with
   | left =>
-      refine ⟨⟨1, a + 1, b⟩, ?_, ?_⟩ <;>
-        simp [step, readCounter, writeCounter, setPC]
+      refine ⟨⟨1, a + 1, b⟩, ?_, ?_⟩
+      · rfl
+      · rfl
   | right =>
-      refine ⟨⟨1, a, b + 1⟩, ?_, ?_⟩ <;>
-        simp [step, readCounter, writeCounter, setPC]
-
-@[simp] theorem resolveTarget_offset (blocks : List TemplateBlock)
-    (base offset : Nat) :
-    resolveTarget blocks base (.offset offset) = base + offset := rfl
-
-@[simp] theorem resolveTarget_blockStart (blocks : List TemplateBlock)
-    (base : Nat) :
-    resolveTarget blocks base .blockStart = base := rfl
-
-@[simp] theorem resolveTarget_sourcePC (blocks : List TemplateBlock)
-    (base pc : Nat) :
-    resolveTarget blocks base (.sourcePC pc) =
-      if pc < blocks.length then blockStart blocks pc else blocksLength blocks := rfl
+      refine ⟨⟨1, a, b + 1⟩, ?_, ?_⟩
+      · rfl
+      · rfl
 
 /--
 Multiply the left counter by p, starting with right = 0.
@@ -188,6 +179,19 @@ def resolveTarget (blocks : List TemplateBlock) (base : Nat) (target : JumpTarge
   | .blockStart => base
   | .sourcePC pc =>
       if pc < blocks.length then blockStart blocks pc else blocksLength blocks
+
+@[simp] theorem resolveTarget_offset (blocks : List TemplateBlock)
+    (base offset : Nat) :
+    resolveTarget blocks base (.offset offset) = base + offset := rfl
+
+@[simp] theorem resolveTarget_blockStart (blocks : List TemplateBlock)
+    (base : Nat) :
+    resolveTarget blocks base .blockStart = base := rfl
+
+@[simp] theorem resolveTarget_sourcePC (blocks : List TemplateBlock)
+    (base pc : Nat) :
+    resolveTarget blocks base (.sourcePC pc) =
+      if pc < blocks.length then blockStart blocks pc else blocksLength blocks := rfl
 
 /-- Relocate one symbolic instruction into the actual M1 target ISA. -/
 def relocateInstruction (blocks : List TemplateBlock) (base : Nat) :
