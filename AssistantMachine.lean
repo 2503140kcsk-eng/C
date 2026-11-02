@@ -4,28 +4,27 @@ import Mathlib.Logic.Equiv.List
 /-!
 # Assistant-machine model (M1)
 
-A self-contained deterministic two-counter machine. Programs are finite lists of
-instructions. A natural-number code is obtained from Mathlib's constructive
-Encodable instance for finite lists; malformed codes are decoded to the empty
-program, so the decoder is total.
+A deterministic two-counter machine. Programs are finite lists of instructions.
+The machine description and every finite execution trace have natural-number
+codes. Decoders are total: malformed program/trace codes decode to the empty list.
 
 Instruction semantics:
 * inc r: increment counter r and advance the program counter.
-* decJump r q: if r is zero, advance the program counter; otherwise
-  decrement r and jump to q.
+* decJump r q: if r is zero, advance the program counter; otherwise decrement r
+  and jump to q.
 Falling off the end of a program halts. The left counter is the output register.
 -/
 
 namespace HakuiKoyori
 namespace AssistantMachine
 
-/-- The two addressable natural-number counters of the machine. -/
+/-- The two addressable natural-number counters. -/
 inductive Counter where
   | left
   | right
 deriving DecidableEq, Repr
 
-/-- The complete instruction set of the selected CM2 machine. -/
+/-- The complete instruction set of the selected two-counter machine. -/
 inductive Instruction where
   | inc (which : Counter)
   | decJump (which : Counter) (target : Nat)
@@ -35,24 +34,24 @@ def encodeCounter : Counter → Nat
   | .left => 0
   | .right => 1
 
-/-- Total: every natural number is interpreted as one of the two counters. -/
+/-- Total decoder: zero selects the left counter; every other code selects right. -/
 def decodeCounter (n : Nat) : Counter :=
   if n = 0 then .left else .right
 
-/-- A canonical natural-number code for a single instruction. -/
+/-- Canonical natural-number code for one instruction. -/
 def encodeInstruction : Instruction → Nat
   | .inc which => Nat.pair 0 (Nat.pair (encodeCounter which) 0)
   | .decJump which target =>
       Nat.pair 1 (Nat.pair (encodeCounter which) target)
 
-/-- A total decoder for instruction codes; unused tags are interpreted as decJump. -/
+/-- Total decoder for instructions; unused tags are interpreted as decJump. -/
 def decodeInstruction (n : Nat) : Instruction :=
   let outer := Nat.unpair n
   let args := Nat.unpair outer.2
   let which := decodeCounter args.1
   if outer.1 = 0 then .inc which else .decJump which args.2
 
-/-- Instruction encoding is lossless on well-formed instructions. -/
+/-- Encoding followed by decoding recovers every instruction. -/
 theorem decodeInstruction_encodeInstruction (i : Instruction) :
     decodeInstruction (encodeInstruction i) = i := by
   cases i with
@@ -63,7 +62,6 @@ theorem decodeInstruction_encodeInstruction (i : Instruction) :
       cases which <;>
         simp [decodeInstruction, encodeInstruction, encodeCounter, decodeCounter]
 
-/-- Every natural number decodes to an instruction, and encoding then decoding is exact. -/
 instance : Encodable Instruction where
   encode := encodeInstruction
   decode := fun n => some (decodeInstruction n)
@@ -71,17 +69,14 @@ instance : Encodable Instruction where
     intro i
     simp [decodeInstruction_encodeInstruction]
 
-/-- A machine program is a finite instruction list. -/
+/-- A program is a finite instruction list. -/
 abbrev Program := List Instruction
 
-/-- Canonical natural-number code of a finite program. -/
+/-- Canonical code of a finite program, using Mathlib's list encoding. -/
 def encodeProgram (p : Program) : Nat :=
   Encodable.encode p
 
-/--
-Total program decoder. Invalid list codes, if any, are mapped to the empty
-program; every valid program is recovered exactly from its canonical code.
--/
+/-- Total program decoder; malformed codes denote the empty program. -/
 def decodeProgram (n : Nat) : Program :=
   (Encodable.decode n : Option Program).getD []
 
@@ -92,17 +87,52 @@ theorem decodeProgram_encodeProgram (p : Program) :
 @[simp] theorem decodeProgram_zero : decodeProgram 0 = [] := by
   simp [decodeProgram]
 
-/-- A complete machine configuration: program counter and two counters. -/
+/-- A complete machine configuration. -/
 structure Configuration where
   pc : Nat
   left : Nat
   right : Nat
 deriving DecidableEq, Repr
 
+/-- Pairing-based natural-number encoding of a configuration. -/
+def encodeConfiguration (c : Configuration) : Nat :=
+  Nat.pair c.pc (Nat.pair c.left c.right)
+
+/-- Total decoder for configurations. -/
+def decodeConfiguration (n : Nat) : Configuration :=
+  let p := Nat.unpair n
+  let q := Nat.unpair p.2
+  ⟨p.1, q.1, q.2⟩
+
+instance : Encodable Configuration where
+  encode := encodeConfiguration
+  decode := fun n => some (decodeConfiguration n)
+  encodek := by
+    intro c
+    cases c
+    simp [encodeConfiguration, decodeConfiguration]
+
+/-- A finite trace is a list of complete configurations. -/
+abbrev Trace := List Configuration
+
+/-- Encode a finite execution trace as one natural number. -/
+def encodeTrace (trace : Trace) : Nat :=
+  Encodable.encode trace
+
+/-- Total trace decoder; malformed codes denote the empty trace. -/
+def decodeTrace (code : Nat) : Trace :=
+  (Encodable.decode code : Option Trace).getD []
+
+theorem decodeTrace_encodeTrace (trace : Trace) :
+    decodeTrace (encodeTrace trace) = trace := by
+  simp [decodeTrace, encodeTrace]
+
+/-- Read the selected counter from a configuration. -/
 def readCounter (c : Configuration) : Counter → Nat
   | .left => c.left
   | .right => c.right
 
+/-- Update one selected counter, leaving the other fields unchanged. -/
 def writeCounter (c : Configuration) (which : Counter) (value : Nat) :
     Configuration :=
   match which with
@@ -113,8 +143,8 @@ def setPC (c : Configuration) (next : Nat) : Configuration :=
   { c with pc := next }
 
 /--
-Deterministic partial transition function. none means that the machine has
-halted because its program counter is outside the finite instruction list.
+Deterministic partial transition function. none means that the program
+counter is outside the finite instruction list, so the machine has halted.
 -/
 def step (p : Program) (c : Configuration) : Option Configuration :=
   match p[c.pc]? with
@@ -138,65 +168,69 @@ def initialConfiguration (input : Nat) : Configuration :=
   ⟨0, input, 0⟩
 
 /--
-A finite run, indexed by its exact number of transitions. The inductive
-derivation is the finite execution trace; no infinite object is used.
+A finite, explicitly stored execution trace. The trace includes its initial
+configuration and its terminal configuration. Each nonterminal entry has
+exactly the successor prescribed by step; the final entry has no successor.
 -/
-inductive Run (p : Program) : Configuration → Nat → Configuration → Prop where
-  | nil (c : Configuration) : Run p c 0 c
-  | cons {c next final : Configuration} {k : Nat}
+inductive ExecutionTrace (p : Program) :
+    Configuration → Trace → Configuration → Prop where
+  | halt (c : Configuration) (hhalt : step p c = none) :
+      ExecutionTrace p c [c] c
+  | cons {c next final : Configuration} {tail : Trace}
       (hstep : step p c = some next)
-      (htail : Run p next k final) :
-      Run p c (k + 1) final
+      (htail : ExecutionTrace p next tail final) :
+      ExecutionTrace p c (c :: tail) final
 
-/--
-Two finite runs from the same start that both end in terminal configurations
-must have the same final configuration.
--/
-theorem terminal_final_unique
+/-- Determinism implies that a starting configuration has at most one trace endpoint. -/
+theorem trace_final_unique
     {p : Program} {start final₁ final₂ : Configuration}
-    {k₁ k₂ : Nat}
-    (h₁ : Run p start k₁ final₁)
-    (h₂ : Run p start k₂ final₂)
-    (halt₁ : step p final₁ = none)
-    (halt₂ : step p final₂ = none) :
+    {trace₁ trace₂ : Trace}
+    (h₁ : ExecutionTrace p start trace₁ final₁)
+    (h₂ : ExecutionTrace p start trace₂ final₂) :
     final₁ = final₂ := by
-  induction h₁ generalizing k₂ final₂ with
-  | nil =>
+  induction h₁ generalizing trace₂ final₂ with
+  | halt c hhalt =>
       cases h₂ with
-      | nil => rfl
-      | cons hstep₂ _ => simp [halt₁] at hstep₂
+      | halt _ => rfl
+      | cons hstep _ => simp [hhalt] at hstep
   | cons hstep₁ htail₁ ih =>
       cases h₂ with
-      | nil => simp [halt₂] at hstep₁
+      | halt _ => simp [hstep₁] at *
       | cons hstep₂ htail₂ =>
-          have hnext := Option.some.inj (hstep₁.symm.trans hstep₂)
-          cases hnext
-          exact ih htail₂ halt₁ halt₂
+          have hnext := step_deterministic hstep₁ hstep₂
+          subst hnext
+          exact ih htail₂
 
-/-- The machine halts with output n when a finite run reaches a terminal state. -/
+/--
+A machine halts with output output iff there is a natural-number code for a
+finite trace beginning at the prescribed input, following every transition,
+and ending at a terminal configuration whose left counter is output.
+-/
 def HaltsWithOutput (p : Program) (input output : Nat) : Prop :=
-  ∃ (steps : Nat) (final : Configuration),
-    Run p (initialConfiguration input) steps final ∧
-    step p final = none ∧ final.left = output
+  ∃ traceCode : Nat, ∃ final : Configuration,
+    ExecutionTrace p (initialConfiguration input) (decodeTrace traceCode) final ∧
+    final.left = output
 
-/-- A program that falls off its end immediately returns its input unchanged. -/
+/-- The empty program halts immediately and returns its input unchanged. -/
 theorem empty_program_halts (input : Nat) :
     HaltsWithOutput [] input input := by
-  refine ⟨0, initialConfiguration input, Run.nil _, ?_, rfl⟩
-  simp [step]
+  refine ⟨encodeTrace [initialConfiguration input], initialConfiguration input, ?_, rfl⟩
+  rw [decodeTrace_encodeTrace]
+  exact ExecutionTrace.halt _ (by simp [step])
 
-/-- A machine and input cannot have two different halting outputs. -/
+/-- The same machine and input cannot have two different halting outputs. -/
 theorem halts_output_unique {p : Program} {input out₁ out₂ : Nat}
     (h₁ : HaltsWithOutput p input out₁)
     (h₂ : HaltsWithOutput p input out₂) : out₁ = out₂ := by
-  rcases h₁ with ⟨k₁, final₁, run₁, halt₁, output₁⟩
-  rcases h₂ with ⟨k₂, final₂, run₂, halt₂, output₂⟩
-  have hfinal := terminal_final_unique run₁ run₂ halt₁ halt₂
+  rcases h₁ with ⟨code₁, final₁, run₁, output₁⟩
+  rcases h₂ with ⟨code₂, final₂, run₂, output₂⟩
+  have hfinal := trace_final_unique run₁ run₂
   exact output₁.symm.trans ((congrArg Configuration.left hfinal).trans output₂)
 
 /--
 The partial halting-output map, made noncomputable by classical choice.
-Uniqueness above guarantees that the chosen witness cannot change the value.
+The uniqueness theorem guarantees that the chosen witness cannot change
+the output value.
 -/
 noncomputable def haltingOutput? (p : Program) (input : Nat) : Option Nat :=
   if h : ∃ output, HaltsWithOutput p input output then
@@ -215,21 +249,22 @@ theorem haltingOutput?_of_halts {p : Program} {input output : Nat}
     halts_output_unique (Classical.choose_spec hex) h
   simp [hchoose]
 
-/-- The explicit finite catalogue of all natural codes up to a bound. -/
+/-- The finite catalogue of every natural-number code from zero through bound. -/
 def codesUpTo (bound : Nat) : List Nat :=
   List.range (bound + 1)
 
 /--
-Maximum halting output among codes 0,...,bound on a fixed input.
-The recursion visits each code once and uses zero for non-halting programs.
+Maximum halting output among all codes 0,...,bound on a fixed input.
+This function is noncomputable because deciding which programs halt is
+noncomputable; its value is nevertheless a uniquely specified finite maximum.
 -/
-def maxHaltOutput : Nat → Nat → Nat
+noncomputable def maxHaltOutput : Nat → Nat → Nat
   | 0, input => (haltingOutput? (decodeProgram 0) input).getD 0
   | bound + 1, input =>
       max ((haltingOutput? (decodeProgram (bound + 1)) input).getD 0)
         (maxHaltOutput bound input)
 
-/-- Every halting output in the finite code catalogue is bounded by its maximum. -/
+/-- Every halting output in the bounded finite catalogue is at most its maximum. -/
 theorem halting_output_le_maxHaltOutput
     {bound code input output : Nat}
     (hcode : code ≤ bound)
@@ -246,11 +281,11 @@ theorem halting_output_le_maxHaltOutput
         simp [maxHaltOutput, haltingOutput?_of_halts h]
       · exact le_trans (ih (Nat.le_of_lt_succ hlt) h) (Nat.le_max_right _ _)
 
-/-- The finite Busy Beaver output function for this exact machine coding. -/
-def busyBeaver (bound input : Nat) : Nat :=
+/-- Finite Busy Beaver output function for this exact machine coding. -/
+noncomputable def busyBeaver (bound input : Nat) : Nat :=
   maxHaltOutput bound input + 1
 
-/-- Diagonal property: the Busy Beaver value exceeds every halting output in its catalogue. -/
+/-- The diagonal value exceeds every halting output in its finite catalogue. -/
 theorem busyBeaver_exceeds_catalogue
     {bound code input output : Nat}
     (hcode : code ≤ bound)
@@ -258,13 +293,13 @@ theorem busyBeaver_exceeds_catalogue
     output < busyBeaver bound input := by
   exact Nat.lt_succ_of_le (halting_output_le_maxHaltOutput hcode h)
 
-/-- Code zero is the empty program, which halts immediately and returns its input. -/
+/-- Code zero denotes the empty program, which immediately returns its input. -/
 theorem codeZero_halts_identity (input : Nat) :
     HaltsWithOutput (decodeProgram 0) input input := by
   rw [decodeProgram_zero]
   exact empty_program_halts input
 
-/-- The catalogue always contains a machine that returns the input unchanged. -/
+/-- The catalogue contains a machine that returns the input unchanged. -/
 theorem busyBeaver_gt_input (bound input : Nat) :
     input < busyBeaver bound input := by
   exact busyBeaver_exceeds_catalogue (Nat.zero_le bound)
