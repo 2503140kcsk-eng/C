@@ -114,7 +114,7 @@ theorem primeCode_inc_r0 (a b c : Nat) :
     primeCode (a + 1) b c = primeCode a b c * 2 := by
   change 2 ^ (a + 1) * (3 ^ b * 5 ^ c)
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 2
-  rw [pow_succ]
+  rw [Nat.pow_succ]
   ac_rfl
 
 /-- Incrementing virtual register 1 multiplies the code by 3. -/
@@ -122,7 +122,7 @@ theorem primeCode_inc_r1 (a b c : Nat) :
     primeCode a (b + 1) c = primeCode a b c * 3 := by
   change 2 ^ a * (3 ^ (b + 1) * 5 ^ c)
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 3
-  rw [pow_succ]
+  rw [Nat.pow_succ]
   ac_rfl
 
 /-- Incrementing virtual register 2 multiplies the code by 5. -/
@@ -130,7 +130,7 @@ theorem primeCode_inc_r2 (a b c : Nat) :
     primeCode a b (c + 1) = primeCode a b c * 5 := by
   change 2 ^ a * (3 ^ b * 5 ^ (c + 1))
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 5
-  rw [pow_succ]
+  rw [Nat.pow_succ]
   ac_rfl
 
 /-- Decrementing a positive virtual register 0 divides its code by 2. -/
@@ -162,14 +162,14 @@ theorem three_pow_mod_two (n : Nat) : 3 ^ n % 2 = 1 := by
   induction n with
   | zero => rfl
   | succ n ih =>
-      simp [pow_succ, Nat.mul_mod, ih]
+      simp [Nat.pow_succ, Nat.mul_mod, ih]
 
 /-- Powers of 5 are odd. -/
 theorem five_pow_mod_two (n : Nat) : 5 ^ n % 2 = 1 := by
   induction n with
   | zero => rfl
   | succ n ih =>
-      simp [pow_succ, Nat.mul_mod, ih]
+      simp [Nat.pow_succ, Nat.mul_mod, ih]
 
 /--
 When virtual register 0 is zero, the prime-power code is odd.
@@ -197,7 +197,7 @@ theorem two_dvd_primeCode_iff (a b c : Nat) :
         refine ⟨2 ^ n * (3 ^ b * 5 ^ c), ?_⟩
         change 2 ^ (n + 1) * (3 ^ b * 5 ^ c)
           = 2 * (2 ^ n * (3 ^ b * 5 ^ c))
-        rw [pow_succ]
+        rw [Nat.pow_succ]
         ac_rfl
 
 end Compiler
