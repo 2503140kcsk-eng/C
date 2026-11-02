@@ -52,3 +52,5 @@ jobs:
         run: lake env lean HakuiKoyori/BoundarySimulation.lean
       - name: Check TM stack arithmetic semantics
         run: lake env lean HakuiKoyori/StackSemantics.lean
+      - name: Check finite typed Turing machine semantics
+        run: lake env lean HakuiKoyori/FiniteTM.lean
