@@ -68,8 +68,7 @@ theorem concreteMUL_entry_zero
     AssistantMachine.step (concreteMUL factor destination)
       ⟨0, 0, scratch⟩ = some ⟨1, 0, scratch⟩ := by
   rw [concreteMUL_eq]
-  simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC]
+  simp [AssistantMachine.step, AssistantMachine.readCounter, AssistantMachine.setPC]
 
 theorem concreteMUL_replicate_step
     (factor destination i data scratch : Nat) (hi : i < factor) :
