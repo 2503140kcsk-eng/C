@@ -225,6 +225,17 @@ the positive-exponent case. Therefore:
 The zero exponent case takes (D_{zero}) and restores (N); the positive
 exponent case takes (D_{div}) and changes (N) to (N/p_i).
 
+**Necessary domain condition.** The correctness/termination contract for
+`DIVREM` is restricted to `p>0`. This is not cosmetic: at `p=0`,
+`divRemAux` selects its base case immediately, namely
+`[inc B, inc B, decJump B, MacroStart]`. Starting from any finite B,
+that block increases B by one and jumps back to its start, so it does not
+terminate. The compiler's generated factors are
+`registerPrime r0=2`, `registerPrime r1=3`, and
+`registerPrime r2=5`; hence every call emitted by
+`compileInstruction3` satisfies the required positive-factor premise.
+The primitive DIVREM theorem must retain this hypothesis explicitly.
+
 ## 4. Label relocation and whole-program compiler
 
 Do not bake guessed global addresses into a block. Use a template target type:
