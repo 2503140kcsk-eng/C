@@ -1,7 +1,8 @@
 module
 
-import Mathlib.Data.Nat.Pairing
-import Mathlib.Logic.Equiv.List
+public import Mathlib.Data.Nat.Pairing
+public import Mathlib.Logic.Equiv.List
+public import Mathlib.Logic.Encodable.Basic
 
 public section
 
