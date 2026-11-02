@@ -78,7 +78,8 @@ theorem concreteMUL_replicate_step
       some ⟨7 + i + 1, data, scratch + 1⟩ := by
   rw [concreteMUL_eq]
   simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC, hi]
+    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
+    List.getElem?_replicate, hi]
 
 theorem concreteMUL_identity_first
     (factor destination data scratch : Nat) :
@@ -87,7 +88,8 @@ theorem concreteMUL_identity_first
       some ⟨8 + factor, data, scratch + 1⟩ := by
   rw [concreteMUL_eq]
   simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC]
+    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
+    List.getElem?_replicate]
 
 theorem concreteMUL_identity_second
     (factor destination data scratch : Nat) :
@@ -96,7 +98,8 @@ theorem concreteMUL_identity_second
       some ⟨0, data, scratch⟩ := by
   rw [concreteMUL_eq]
   simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC]
+    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
+    List.getElem?_replicate]
 
 theorem concreteMUL_replicate_run
     (factor destination i fuel data scratch : Nat)
@@ -256,7 +259,7 @@ theorem concreteMUL_correct_run
   have hexit := concreteMUL_exit factor destination (factor * input)
   have hcount :
       input * (5 * factor + 3) + 4 =
-        input * (factor + 3) + (1 + (4 * (factor * input) + 3)) := by omega
+        input * (factor + 3) + (1 + (4 * (factor * input) + 3)) := by ring
   rw [hcount, runN_add]
   simp only [houter, Option.some_bind]
   rw [runN_add 1 (4 * (factor * input) + 3)]
