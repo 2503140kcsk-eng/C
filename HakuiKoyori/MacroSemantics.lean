@@ -68,7 +68,7 @@ def MUL (factor input : Nat) : CounterPair :=
 
 /-- The outer-loop recurrence preserves the stated affine invariant. -/
 theorem mul_outer_loop_invariant_step {factor input k : Nat}
-    (hk : k < input) :
+    (_hk : k < input) :
     mulOuterState factor input (k + 1) =
       mulOuterRound factor (mulOuterState factor input k) := by
   simp [mulOuterState, mulOuterRound, Nat.mul_succ]
@@ -76,7 +76,7 @@ theorem mul_outer_loop_invariant_step {factor input k : Nat}
 
 /-- The transfer-loop recurrence preserves its stated affine invariant. -/
 theorem mul_transfer_loop_invariant_step {factor input k : Nat}
-    (hk : k < factor * input) :
+    (_hk : k < factor * input) :
     mulTransferState factor input (k + 1) =
       mulTransferRound (mulTransferState factor input k) := by
   simp [mulTransferState, mulTransferRound]
@@ -101,15 +101,15 @@ theorem mul_transfer_loop_invariant_step {factor input k : Nat}
 /-- Closed form for the first MUL loop, including its full loop invariant. -/
 theorem mulOuterRun_spec (factor input b : Nat) :
     mulOuterRun factor input b = (0, b + factor * input) := by
-  induction input with
+  induction input generalizing b with
   | zero =>
       simp [mulOuterRun]
   | succ input ih =>
       simp only [mulOuterRun]
-      rw [ih]
+      rw [ih (b + factor)]
       simp only [Nat.mul_succ, Prod.mk.injEq]
       constructor
-      · rfl
+      · trivial
       · omega
 
 /-- Closed form for the second MUL loop. -/
@@ -124,7 +124,7 @@ theorem mulTransferRun_spec (a b : Nat) :
       simp only [Prod.mk.injEq]
       constructor
       · omega
-      · rfl
+      · trivial
 
 /-- Kernel-checked macro-level correctness of MUL. -/
 theorem MUL_correct (factor input : Nat) :
@@ -166,7 +166,7 @@ def TR (m r q : Nat) : CounterPair :=
 
 /-- The TR loop recurrence preserves its stated quotient invariant. -/
 theorem tr_loop_invariant_step {m q k : Nat}
-    (hk : k < q) :
+    (_hk : k < q) :
     trLoopState m q (k + 1) =
       trLoopRound m (trLoopState m q k) := by
   simp [trLoopState, trLoopRound, Nat.mul_succ]
@@ -228,7 +228,7 @@ The group-loop invariant is preserved whenever another complete group fits
 inside the remaining data counter.
 -/
 theorem divRem_group_loop_invariant_step {p input k : Nat}
-    (hfit : p * (k + 1) ≤ input) :
+    (_hfit : p * (k + 1) ≤ input) :
     divRemGroupState p input (k + 1) =
       divRemGroupRound (divRemGroupState p input k) p := by
   simp [divRemGroupState, divRemGroupRound, Nat.mul_succ]
@@ -266,7 +266,7 @@ def divRemResidueRound (s : CounterPair) : CounterPair :=
 
 /-- The residue-scan invariant is preserved while the current test is positive. -/
 theorem divRem_residue_loop_invariant_step {remainder quotient j : Nat}
-    (hpositive : j < remainder) :
+    (_hpositive : j < remainder) :
     divRemResidueState remainder quotient (j + 1) =
       divRemResidueRound (divRemResidueState remainder quotient j) := by
   simp [divRemResidueState, divRemResidueRound]
@@ -310,7 +310,7 @@ def DIVREM (p input : Nat) : CounterPair :=
   divRemHandler p (input % p) (input / p)
 
 /-- Kernel-checked correctness of the abstract DIVREM macro. -/
-theorem DIVREM_correct {p input : Nat} (hp : 0 < p) :
+theorem DIVREM_correct {p input : Nat} (_hp : 0 < p) :
     DIVREM p input =
       if input % p = 0 then (input / p, 0) else (input, 0) := by
   unfold DIVREM
