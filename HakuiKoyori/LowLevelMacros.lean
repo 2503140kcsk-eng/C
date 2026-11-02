@@ -224,6 +224,64 @@ def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
   (enumerateBlocks blocks 0).flatMap fun (pc, block) =>
     block.map (relocateInstruction blocks (blockStart blocks pc))
 
+
+/-!
+## Flattening length and terminal-address bridge
+
+These lemmas establish that relocation changes labels but not block sizes,
+and that the address immediately after the emitted program is the sum of
+the source-block lengths.  They do not yet establish instruction-by-instruction
+operational preservation; that requires the separate lookup/simulation lemma.
+-/
+
+/-- Enumerating and relocating a list of blocks preserves its total length. -/
+private theorem enumerateBlocks_relocated_length
+    (whole : List TemplateBlock) :
+    ∀ (blocks : List TemplateBlock) (start : Nat),
+      ((enumerateBlocks blocks start).flatMap
+        (fun (pc, block) =>
+          block.map (relocateInstruction whole (blockStart whole pc)))).length =
+        (blocks.map List.length).sum := by
+  intro blocks
+  induction blocks with
+  | nil =>
+      intro start
+      simp [enumerateBlocks]
+  | cons block rest ih =>
+      intro start
+      simp only [enumerateBlocks, List.flatMap_cons,
+        List.length_append, List.length_map]
+      rw [ih (start + 1)]
+      simp
+
+/-- Flattening all blocks preserves the sum of their source lengths. -/
+theorem emitBlocks_length (blocks : List TemplateBlock) :
+    (emitBlocks blocks).length = blocksLength blocks := by
+  unfold emitBlocks blocksLength
+  exact enumerateBlocks_relocated_length blocks blocks 0
+
+/-- The prefix length at the terminal source PC is the complete target length. -/
+theorem prefixLength_terminal (blocks : List TemplateBlock) :
+    prefixLength blocks blocks.length = blocksLength blocks := by
+  induction blocks with
+  | nil =>
+      simp [prefixLength, blocksLength]
+  | cons block rest ih =>
+      simp [prefixLength, blocksLength, ih]
+
+/-- The emitted program ends exactly at the address assigned to the terminal PC. -/
+theorem emitBlocks_terminal_address (blocks : List TemplateBlock) :
+    (emitBlocks blocks).length = blockStart blocks blocks.length := by
+  rw [emitBlocks_length, blockStart_eq_prefixLength]
+  exact (prefixLength_terminal blocks).symm
+
+/-- Compilation keeps the source instruction count as the number of blocks. -/
+theorem compileProgram3_block_count
+    (program : _root_.HakuiKoyori.Compiler.Program3) :
+    (compileBlocks3 program).length = program.length :=
+  compileBlocks3_length program
+
+
 /-- Prime assigned to each virtual register in the M2 representation. -/
 @[expose]
 def registerPrime : _root_.HakuiKoyori.Compiler.Register3 → Nat
