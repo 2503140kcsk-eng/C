@@ -42,47 +42,68 @@ measure prevents an infinite target-only stutter.
 Use a finite-alphabet, deterministic, one-tape Turing machine only as the
 surface source language. Keep the source semantics first-order and finite.
 
-### Stage A: tape machine to three-register machine
+### Stage A: finite tape machine to three-register machine
 
-Represent the tape as two finite stacks:
-- L: cells strictly left of the head, nearest cell on top;
-- R: current cell followed by cells to the right, current cell on top;
-- absent cells are blank.
+The Lean source model in `StackSemantics.lean` is authoritative:
+`TMConfiguration` consists of a finite control state, a separate current
+symbol, a left stack containing cells strictly left of the head, and a right
+stack containing cells strictly right of the head. Neither stack contains
+the current cell.
 
-For alphabet Γ, choose B = |Γ| + 1 and injectively code each symbol by a
-digit in {1,...,B-1}. A stack is the natural number whose least-significant
-base-B digit is its top symbol; zero denotes the empty stack (all further
-cells blank).
+Fix a finite state set `Q` and finite alphabet `Γ) containing blank
+`□). Choose `β=|Γ|+1` and an injective digit map
+`d:Γ→{0,...,β-1}` with `d(□)=0) and nonblank symbols assigned nonzero
+digits. A stack's nearest cell is the least-significant base-`β` digit:
+`enc([])=0`, `enc(s::xs)=d(s)+β*enc(xs)). Thus
+`stackPop β z=(z mod β,z/β)`; its remainder is the symbol and its quotient
+is the remaining stack. Every transition writes a digit below `β).
 
-The three registers are L, R, and TMP. At every simulated Turing
-instruction boundary, TMP = 0.
+The three virtual registers are `r0=T` (scratch and final unary-output
+accumulator), `r1=L` (left stack), and `r2=R` (right stack). At ordinary
+TM-step boundaries `T=0`. The finite program counter encodes the pair
+`(q,a)∈Q×Γ`; this pair contains the explicit current symbol in
+`TMConfiguration`. Consequently the compiler input must be a finite
+transition table. The current unbounded function alias `TMDelta := Nat →
+Nat → Option TMAction` is only a semantic convenience; it is not itself a
+finite/effective machine description. A formal compiler must consume a
+finite typed table (or bounded codes plus a proof that every next state and
+written symbol remains in range).
 
-Primitive stack operations are implemented by terminating loops:
-- push(X,d): consume X into TMP, adding B to TMP for each decrement of X;
-  transfer TMP back into X; then add d. The result is B*X_old+d.
-- pop(X): consume X one unit at a time, maintain the residue modulo B in the
-  finite program counter, and increment TMP whenever the residue wraps.
-  At exit, TMP = X_old / B and finite control contains X_old % B; transfer
-  the quotient back to X.
-- Empty-pop returns the blank symbol and leaves the stack empty.
+For each transition `(q,a)→(q',b,move)`, dispatch from label `(q,a)):
 
-For each TM transition (q,a) -> (q',b,move), finite control knows q and the
-popped symbol a. It writes b and moves by pushing/popping the appropriate
-stacks. The third register is scratch only and is zero at every macro
-boundary.
+- Stay: set the current symbol to `b` by jumping to label `(q',b));
+  leave both stacks unchanged.
+- Right: PUSH `d(b)` onto `L), POP `R), and jump to
+  `(q',a')), where `a'` is the popped symbol.
+- Left: PUSH `d(b)` onto `R), POP `L), and jump to
+  `(q',a')), where `a'` is the popped symbol.
+
+For all POP calls, the stack macro returns the quotient in the selected
+register and places the remainder in finite control; the scratch register
+returns to zero. PUSH realizes `X:=β*X+d(b)`. These operations match
+the explicit-current cases in `turingStep_right`, `turingStep_left), and
+`turingStep_stay). The source configuration relation must state that the
+finite-control label is exactly `(state,current)), while the two register
+values are exactly the side-stack codes.
+
+The initial M1 input is not yet a TM boundary state: the compiler's entry
+block is a bootstrap. It receives the complete unary word `1^n` in `R`,
+including the head cell, with `T=L=0). It executes POP(R), then routes
+the returned symbol to `(q0,a)). For `n=0), this returns blank and an
+empty right stack; for `n>0), it returns `1` and leaves the remaining
+`n-1` symbols in R. Hence
+`ρ(n)=d(1)*(1+β+...+β^(n-1))` and, with the fixed register assignment,
+`inputCode(n)=primeCode(0,0,ρ(n))=5^(ρ(n))`.
 
 Required Stage-A lemmas:
-1. encodeStack / decodeTop satisfy the quotient/remainder equations.
-2. Each push macro terminates and transforms X to B*X+d.
-3. Each pop macro terminates and returns (X/B, X%B).
-4. The three-register macro preserves the tape/configuration relation.
-5. Each TM transition is matched by a nonempty finite three-register run.
-6. A halting TM configuration maps to a designated three-register output
-   convention, with the same natural-number value.
-
-The Lean definition Compiler.step3 is the deterministic intermediate
-operational semantics. The current CompilerCore.lean proves its
-single-step determinism, but does not yet emit these stack macros.
+1. `encodeStack` / `stackPop` satisfy the exact quotient/remainder equations.
+2. Every PUSH macro terminates and transforms `X) to `β*X_old+d).
+3. Every POP macro terminates, returns `X_old/β), and routes
+   `X_old mod β) to the corresponding finite-control label.
+4. The control-pair/stack-code relation is invariant under every operation.
+5. Every finite TM step has a matching nonempty finite three-register run.
+6. A halting TM configuration is converted to the specified unary-output
+   convention and then to `(T,L,R)=(v,0,0)).
 
 ### Stage B: three-register machine to two-counter machine
 
