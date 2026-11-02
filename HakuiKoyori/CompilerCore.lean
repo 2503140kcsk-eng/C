@@ -1,4 +1,5 @@
 import HakuiKoyori.AssistantMachine
+import HakuiKoyori.Simulation
 
 /-!
 # Compiler foundations (M2)
