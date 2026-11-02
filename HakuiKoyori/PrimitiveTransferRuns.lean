@@ -109,8 +109,8 @@ theorem concreteTR_remainder_get
             ([.inc .left, .decJump .left destination] ++
               (List.replicate m (.inc .left) ++
                 [.inc .left, .decJump .left 0]))) := by
-    rw [concreteTR_eq]
-    simp [prefixR, List.append_assoc]
+    simp [concreteTR, prefixR, trHead, trTail, transferBlock,
+      identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixR.length = 1 := by simp [prefixR]
   have hreplicateLength :
       (List.replicate r (.inc .left)).length = r := by simp
@@ -143,8 +143,8 @@ theorem concreteTR_transfer_get
         prefixM ++
           (List.replicate m (.inc .left) ++
             [.inc .left, .decJump .left 0]) := by
-    rw [concreteTR_eq]
-    simp [prefixM, List.append_assoc]
+    simp [concreteTR, prefixM, trHead, trTail, transferBlock,
+      identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixM.length = 3 + r := by
     simp only [prefixM, List.length_append, List.length_cons,
       List.length_nil, List.length_replicate]
@@ -178,8 +178,8 @@ theorem concreteTR_remainder_jump_get
           ([.inc .left, .decJump .left destination] ++
             (List.replicate m (.inc .left) ++
               [.inc .left, .decJump .left 0])) := by
-    rw [concreteTR_eq]
-    simp [prefixR, List.append_assoc]
+    simp [concreteTR, prefixR, trHead, trTail, transferBlock,
+      identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixR.length = 1 + r := by
     simp [prefixR]
     omega
@@ -220,8 +220,8 @@ theorem concreteTR_final_jump_get
   have hshape :
       concreteTR m r destination =
         prefixEnd ++ [.inc .left, .decJump .left 0] := by
-    rw [concreteTR_eq]
-    simp [prefixEnd, List.append_assoc]
+    simp [concreteTR, prefixEnd, trHead, trTail, transferBlock,
+      identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixEnd.length = 3 + r + m := by
     simp only [prefixEnd, List.length_append, List.length_cons,
       List.length_nil, List.length_replicate]
@@ -266,7 +266,8 @@ theorem concreteTR_positive_round
         ⟨3 + r + m, a + m, b⟩ =
           some ⟨0, a + m, b⟩ := by
     exact runN_identityJumpLeft (concreteTR m r destination)
-      (3 + r + m) 0 (a + m) b hjump₁ hjump₂
+      (3 + r + m) 0 (a + m) b hjump₁
+      (by simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hjump₂)
   calc
     runN (m + 3) (concreteTR m r destination)
         ⟨0, a, b + 1⟩ =
@@ -338,7 +339,8 @@ theorem concreteTR_remainder_run
         ⟨1 + r, a + r, 0⟩ =
           some ⟨destination, a + r, 0⟩ := by
     exact runN_identityJumpLeft (concreteTR m r destination)
-      (1 + r) destination (a + r) 0 hjump₁ hjump₂
+      (1 + r) destination (a + r) 0 hjump₁
+      (by simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hjump₂)
   calc
     runN (r + 3) (concreteTR m r destination) ⟨0, a, 0⟩ =
       runN (1 + (r + 2)) (concreteTR m r destination)
