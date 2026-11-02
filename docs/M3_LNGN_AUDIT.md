@@ -22,18 +22,18 @@ The phrase “largest well-defined googologism” is a community classification,
 
 ## 2. Source theory, as stated by the author
 
-The author's summary starts with a first-order set-theory language `L), extended by a unary function symbol `U` and the membership relation `∈`. It then describes:
+The author's summary starts with a first-order set-theory language `L`, extended by a unary function symbol `U` and the membership relation `∈`. It then describes:
 
-1. `ZF_L`: ZF axiom instances in the extended language, with comprehension and replacement schemas ranging over `L)-formulas, including formulas containing `U`.
-2. A formalized language `⌜L⌝), with Gödel coding and a further unary function symbol `Θ`.
-3. `ZFC_{⌜L⌝}` and a Henkin-constant schema: for a formula `P) with code `n`, if an object satisfying `P) exists, then `Θ(n)` is required to satisfy `P`.
+1. `ZF_L`: ZF axiom instances in the extended language, with comprehension and replacement schemas ranging over `L`-formulas, including formulas containing `U`.
+2. A formalized language `⌜L⌝`, with Gödel coding and a further unary function symbol `Θ`.
+3. `ZFC_{⌜L⌝}` and a Henkin-constant schema: for a formula `P` with code `n`, if an object satisfying `P` exists, then `Θ(n)` is required to satisfy `P`.
 4. `ZFCH_{⌜L⌝}`: the formalized ZFC theory augmented by that Henkin schema.
 5. A theory `T = ZF_L ∪ {U1,U2,U3}`.
 
 The community transcription gives the intended roles of the three additional axioms:
 
 - `U1`: each `U(α)` satisfies `ZFCH_{⌜L⌝}`.
-- `U2`: the interpretation of `U) inside `U(α)` agrees with earlier `U(β)` for `β∈α`.
+- `U2`: the interpretation of `U` inside `U(α)` agrees with earlier `U(β)` for `β∈α`.
 - `U3`: each `U(α)` is related to an initial segment `V_β` in a way intended to preserve the membership relation on that segment.
 
 The exact formal syntax, bound-variable conventions, coding, and all schema instances must be checked against the original-language source before these paraphrases are promoted to formal definitions. In particular, this document does not silently replace satisfaction by provability.
@@ -46,12 +46,12 @@ The source summary specifies a surjective coding
 
 using Cantor normal forms.
 
-For an `⌜L⌝)-formula `P), `IsDefinition(P)` says that there is exactly one `x) satisfying `P`.
+For an `⌜L⌝)-formula `P`, `IsDefinition(P)` says that there is exactly one `x` satisfying `P`.
 
 The source's predicate `Definable(m,i,P)` requires, in substance:
 
-1. `i∈ℕ);
-2. `P) is an `⌜L⌝)-formula;
+1. `i∈ℕ`
+2. `P` is an `⌜L⌝)-formula;
 3. `U(CNF(i)) ⊨ IsDefinition(P)`;
 4. `U(CNF(i)) ⊨ P[m/x]`.
 
@@ -81,7 +81,7 @@ The following gates are required before a comparison claim is allowed:
 
 - [ ] Obtain and freeze the original Japanese source and its exact notation; compare it line-by-line with the English summary.
 - [ ] Resolve the indexing/multiplicity convention in the sum defining `f(n)`.
-- [ ] Define the complete syntax and Gödel coding of `L) and `⌜L⌝`.
+- [ ] Define the complete syntax and Gödel coding of `L` and `⌜L⌝`.
 - [ ] Formalize the axiom schemas, including capture-avoiding substitution in `P[m/x]`.
 - [ ] Define the relevant structures and the satisfaction relation.
 - [ ] State and discharge the required existence/consistency assumptions for the `U(α)` hierarchy; do not smuggle them in as unapproved axioms.
