@@ -1,5 +1,17 @@
 module
 
+/-- Rebased block lookup is the mapped lookup of the original instruction. -/
+@[simp] theorem rebaseBlock_getElem? (base : Nat)
+    (block : TemplateBlock) (i : Nat) :
+    (rebaseBlock base block)[i]? =
+      Option.map (rebaseInstruction base) (block[i]?) := by
+  simp [rebaseBlock]
+
+
+@[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
+    (rebaseBlock base block).length = block.length := by
+  simp [rebaseBlock]
+
 public import HakuiKoyori.CompilerCore
 
 public section
@@ -68,18 +80,6 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
 @[simp] theorem rebaseTarget_sourcePC (base pc : Nat) :
     rebaseTarget base (.sourcePC pc) = .sourcePC pc := rfl
 
-
-/-- Rebased block lookup is the mapped lookup of the original instruction. -/
-@[simp] theorem rebaseBlock_getElem? (base : Nat)
-    (block : TemplateBlock) (i : Nat) :
-    (rebaseBlock base block)[i]? =
-      Option.map (rebaseInstruction base) (block[i]?) := by
-  simp [rebaseBlock]
-
-
-@[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
-    (rebaseBlock base block).length = block.length := by
-  simp [rebaseBlock]
 
 /-- Identity jump using only the selected counter's two primitive instructions. -/
 @[expose]
