@@ -2,7 +2,7 @@ name: Lean proof check
 
 on:
   push:
-    branches: [main]
+    branches: [main, "m1/**"]
   pull_request:
   workflow_dispatch:
 
@@ -21,10 +21,12 @@ jobs:
           build: true
           test: false
           lint: false
-          use-mathlib-cache: false
+          use-mathlib-cache: true
           axiom-audit: true
           axiom-audit-root: HakuiKoyori
       - name: Show Lean version
         run: lean --version
       - name: Check standalone formalization
         run: lake env lean HakuiKoyori.lean
+      - name: Check machine formalization
+        run: lake env lean AssistantMachine.lean
