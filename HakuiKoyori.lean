@@ -209,3 +209,5 @@ theorem hakuiKoyoriNumber1_dominates_bounded_machine_catalogue
   exact AssistantMachine.busyBeaver_exceeds_catalogue hcode hhalts
 
 end HakuiKoyori
+
+import HakuiKoyori.PrimitiveMacroRuns
