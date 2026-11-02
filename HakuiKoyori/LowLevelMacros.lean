@@ -567,5 +567,84 @@ theorem compileBlocks3_blockStart_strict
   · simpa [compileBlocks3_length] using hj
 
 
+/-!
+## Exact DIVREM block-size invariants
+
+The quotient/remainder block is a finite chain of residue handlers followed
+by a three-instruction loop-back tail.  The following equations expose its
+exact layout, which is needed before proving execution-level relocation.
+-/
+
+/-- Triangular numbers, defined by their successor recurrence. -/
+def divRemTriangular : Nat → Nat
+  | 0 => 0
+  | n + 1 => divRemTriangular n + n
+
+/-- Exact recursive length predicted by the DIVREM generator. -/
+def divRemAuxLength (p : Nat) : Nat → Nat → Nat
+  | 0, _ => 3
+  | fuel + 1, residue =>
+      (if residue = 0 then 1 else p) + residue + 6 +
+        divRemAuxLength p fuel (residue + 1)
+
+/-- The generated DIVREM auxiliary block has its predicted length. -/
+theorem divRemAux_length_exact
+    (p : Nat) (destinationDiv destinationNondiv : JumpTarget)
+    (fuel residue : Nat) :
+    (divRemAux p destinationDiv destinationNondiv fuel residue).length =
+      divRemAuxLength p fuel residue := by
+  induction fuel generalizing residue with
+  | zero =>
+      simp [divRemAux, divRemAuxLength]
+  | succ fuel ih =>
+      simp [divRemAux, divRemAuxLength, rebaseBlock_length,
+        transferBlock_length, ih] <;> omega
+
+/-- For a positive starting residue, every handler uses multiplier p. -/
+theorem divRemAuxLength_pos_residue
+    (p fuel residue : Nat) (hresidue : 0 < residue) :
+    divRemAuxLength p fuel residue =
+      3 + fuel * (p + residue + 6) + divRemTriangular fuel := by
+  induction fuel generalizing residue with
+  | zero =>
+      simp [divRemAuxLength, divRemTriangular]
+  | succ fuel ih =>
+      simp only [divRemAuxLength, if_neg (by omega)]
+      rw [ih (residue + 1) (by omega)]
+      simp only [divRemTriangular]
+      ring
+
+/-- Closed size formula for a nonempty DIVREM chain starting at residue zero. -/
+theorem divRemAuxLength_zero_succ
+    (p fuel : Nat) :
+    divRemAuxLength p (fuel + 1) 0 =
+      10 + fuel * (p + 6) + divRemTriangular (fuel + 1) := by
+  simp only [divRemAuxLength, if_pos rfl]
+  rw [divRemAuxLength_pos_residue p fuel 1 (by omega)]
+  simp only [divRemTriangular]
+  ring
+
+/-- The complete p-residue DIVREM block has the exact recursive size. -/
+theorem divRemBlock_length_exact
+    (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
+    (divRemBlock p destinationDiv destinationNondiv).length =
+      divRemAuxLength p p 0 := by
+  unfold divRemBlock
+  exact divRemAux_length_exact p destinationDiv destinationNondiv p 0
+
+/-- Closed exact length of DIVREM for every positive divisor p. -/
+theorem divRemBlock_length_closed
+    {p : Nat} (hp : 0 < p)
+    (destinationDiv destinationNondiv : JumpTarget) :
+    (divRemBlock p destinationDiv destinationNondiv).length =
+      10 + (p - 1) * (p + 6) + divRemTriangular p := by
+  rw [divRemBlock_length_exact]
+  cases p with
+  | zero =>
+      omega
+  | succ n =>
+      simpa using (divRemAuxLength_zero_succ (Nat.succ n) n)
+
+
 end Compiler
 end HakuiKoyori
