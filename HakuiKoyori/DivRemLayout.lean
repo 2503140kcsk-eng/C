@@ -263,35 +263,35 @@ theorem divRemAuxFrom_test_lookup
             simp [stagePrefix, handler, rebaseBlock_length,
               transferBlock_length, divRemStageSpan, divRemStageMultiplier,
               Nat.add_assoc]
+            omega
           have hshape :
               divRemAuxFrom p destinationDiv destinationNondiv
                   (fuel + 1) residue offset =
                 stagePrefix ++ rest := by
             simp [divRemAuxFrom, stagePrefix, rest, List.append_assoc]
           have hindex :
-              divRemStageOffset p residue (i + 2) =
+              divRemStageOffset p residue (i + 1) =
                 divRemStageSpan p residue +
-                  divRemStageOffset p (residue + 1) (i + 1) := by
-            simpa [Nat.add_assoc] using
-              (divRemStageOffset_succ p residue (i + 1))
+                  divRemStageOffset p (residue + 1) i := by
+            exact divRemStageOffset_succ p residue i
           rw [hshape, hindex]
           rw [List.getElem?_append_right (l₁ := stagePrefix) (l₂ := rest)
             (i := divRemStageSpan p residue +
-              divRemStageOffset p (residue + 1) (i + 1))
+              divRemStageOffset p (residue + 1) i)
             (by rw [hprefix]; omega)]
           rw [show
             divRemStageSpan p residue +
-                divRemStageOffset p (residue + 1) (i + 1) -
+                divRemStageOffset p (residue + 1) i -
               stagePrefix.length =
-                divRemStageOffset p (residue + 1) (i + 1) by
+                divRemStageOffset p (residue + 1) i by
               rw [hprefix]]
           have hrec := ih (residue + 1)
-            (offset + divRemStageSpan p residue) (i + 1) (by omega)
+            (offset + divRemStageSpan p residue) i (by omega)
           have hnext :
               offset + divRemStageSpan p residue +
-                  divRemStageOffset p (residue + 1) (i + 2) =
-                offset + divRemStageOffset p residue (i + 3) := by
-            rw [divRemStageOffset_succ]
+                  divRemStageOffset p (residue + 1) (i + 1) =
+                offset + divRemStageOffset p residue (i + 2) := by
+            rw [divRemStageOffset_succ p residue (i + 1)]
             omega
           simpa [rest, hnext, Nat.add_assoc] using hrec
 
