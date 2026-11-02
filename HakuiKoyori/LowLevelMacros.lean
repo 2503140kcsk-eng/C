@@ -425,7 +425,8 @@ theorem compileBlocks3_blockStart_strict
       blockStart (compileBlocks3 program) j := by
   apply blockStart_strict
   · exact compileBlocks3_all_nonempty program
-  · simpa using hj
+  · exact hij
+  · simpa [compileBlocks3_length] using hj
 
 
 end Compiler
