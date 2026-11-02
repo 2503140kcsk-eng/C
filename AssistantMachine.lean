@@ -195,10 +195,10 @@ theorem trace_final_unique
       | cons hstep _ => simp [hhalt] at hstep
   | cons hstep₁ htail₁ ih =>
       cases h₂ with
-      | halt _ => simp [hstep₁] at *
+      | halt hhalt₂ => simp [hstep₁] at hhalt₂
       | cons hstep₂ htail₂ =>
           have hnext := step_deterministic hstep₁ hstep₂
-          subst hnext
+          cases hnext
           exact ih htail₂
 
 /--
@@ -232,8 +232,9 @@ The partial halting-output map, made noncomputable by classical choice.
 The uniqueness theorem guarantees that the chosen witness cannot change
 the output value.
 -/
-noncomputable def haltingOutput? (p : Program) (input : Nat) : Option Nat :=
-  if h : ∃ output, HaltsWithOutput p input output then
+noncomputable def haltingOutput? (p : Program) (input : Nat) : Option Nat := by
+  classical
+  exact if h : ∃ output, HaltsWithOutput p input output then
     some (Classical.choose h)
   else
     none
