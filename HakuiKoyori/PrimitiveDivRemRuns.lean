@@ -209,18 +209,40 @@ theorem runN_relocatedTRHandler
   have hJumpIncRaw :
       handler[1 + r]? = some jumpInc := by
     rw [hhandler]
-    have h := getElem?_replicate_segment
-      ([entry] ++ residueCode)
-      ([jump] ++ (transferCode ++ [finalInc, finalJump]))
-      1 0 jumpInc (by omega)
-    simpa [entry, residueCode, jumpInc, Nat.add_assoc] using h
+    let pre : Program := [entry] ++ residueCode
+    let suffix : Program := [jump] ++ (transferCode ++ [finalInc, finalJump])
+    have h := getElem?_middle pre [jumpInc] suffix 0 (by simp)
+    have hmiddle :
+        (pre ++ ([jumpInc] ++ suffix))[pre.length]? = some jumpInc := by
+      simpa using h
+    have hlist :
+        [entry] ++ (residueCode ++ ([jumpInc, jump] ++
+          (transferCode ++ [finalInc, finalJump]))) =
+          pre ++ ([jumpInc] ++ suffix) := by
+      simp [pre, suffix, List.append_assoc]
+    have hindex : 1 + r = pre.length := by
+      simp [pre, residueCode]
+      omega
+    rw [hlist, hindex]
+    exact hmiddle
   have hJumpRaw : handler[1 + r + 1]? = some jump := by
     rw [hhandler]
-    have h := getElem?_replicate_segment
-      ([entry] ++ residueCode ++ [jumpInc])
-      (transferCode ++ [finalInc, finalJump])
-      1 0 jump (by omega)
-    simpa [entry, residueCode, jumpInc, jump, Nat.add_assoc] using h
+    let pre : Program := [entry] ++ residueCode ++ [jumpInc]
+    let suffix : Program := transferCode ++ [finalInc, finalJump]
+    have h := getElem?_middle pre [jump] suffix 0 (by simp)
+    have hmiddle :
+        (pre ++ ([jump] ++ suffix))[pre.length]? = some jump := by
+      simpa using h
+    have hlist :
+        [entry] ++ (residueCode ++ ([jumpInc, jump] ++
+          (transferCode ++ [finalInc, finalJump]))) =
+          pre ++ ([jump] ++ suffix) := by
+      simp [pre, suffix, List.append_assoc]
+    have hindex : 1 + r + 1 = pre.length := by
+      simp [pre, residueCode]
+      omega
+    rw [hlist, hindex]
+    exact hmiddle
   have hTransferRaw : ∀ i, i < m →
       handler[3 + r + i]? = some (Instruction.inc .left) := by
     intro i hi
