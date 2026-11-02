@@ -3,6 +3,8 @@ module
 import Mathlib.Data.Nat.Pairing
 import Mathlib.Logic.Equiv.List
 
+public section
+
 /-!
 # Assistant-machine model (M1)
 
