@@ -441,15 +441,18 @@ A halting TM is required to leave the unary result `1^v` beginning at
 the current head cell and followed immediately by blank. The cleanup block
 first clears `L`, since the original left stack is no longer needed and
 `L` will be the scratch register for POP. It then inspects the current
-symbol stored in finite control: it increments `T` once if the current
-symbol is `1`, and zero times if it is blank. A different nonblank
-current symbol violates the output precondition. It scans `R` using
-`L` as scratch, preserving `T`: each popped `1` increments `T`;
-the first blank ends the scan; any other symbol before that blank violates
-the output precondition. The scan stops at the first blank and need not
-inspect the tape beyond it. Finally, it clears `R` with a self-decrement
-loop; this does not change `T`. The final virtual register tuple is
-`(T,L,R)=(v,0,0)`.
+symbol stored in finite control:
+- if it is blank, set `T=0` and skip the `R)-scan, because the output
+  prefix has already ended at the head cell;
+- if it is `1`, set `T=1` and scan `R) using `L` as scratch, preserving
+  `T): each consecutive `1` increments `T), and the first blank ends
+  the scan;
+- any other current symbol, or any nonblank non-`1` symbol encountered
+  before the terminating blank, violates the output precondition.
+
+The scan never counts symbols beyond the first blank. Finally, it clears
+`R` with a self-decrement loop; this does not change `T`. The final
+virtual register tuple is `(T,L,R)=(v,0,0)`.
 
 Stage B therefore emits the exact target output code
 \`primeCode(v,0,0)=2^v\`. The verified compiler contract uses the explicit
