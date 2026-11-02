@@ -210,13 +210,14 @@ and ending at a terminal configuration whose left counter is output.
 -/
 def HaltsWithOutput (p : Program) (input output : Nat) : Prop :=
   ∃ traceCode : Nat, ∃ final : Configuration,
-    ExecutionTrace p (initialConfiguration input) (decodeTrace traceCode) final ∧
+    Nonempty (ExecutionTrace p (initialConfiguration input) (decodeTrace traceCode) final) ∧
     final.left = output
 
 /-- The empty program halts immediately and returns its input unchanged. -/
 theorem empty_program_halts (input : Nat) :
     HaltsWithOutput [] input input := by
   refine ⟨encodeTrace [initialConfiguration input], initialConfiguration input, ?_, rfl⟩
+  constructor
   rw [decodeTrace_encodeTrace]
   exact ExecutionTrace.halt _ (by simp [step])
 
@@ -226,7 +227,9 @@ theorem halts_output_unique {p : Program} {input out₁ out₂ : Nat}
     (h₂ : HaltsWithOutput p input out₂) : out₁ = out₂ := by
   rcases h₁ with ⟨code₁, final₁, run₁, output₁⟩
   rcases h₂ with ⟨code₂, final₂, run₂, output₂⟩
-  have hfinal := trace_final_unique run₁ run₂
+  rcases run₁ with ⟨trace₁⟩
+  rcases run₂ with ⟨trace₂⟩
+  have hfinal := trace_final_unique trace₁ trace₂
   exact output₁.symm.trans ((congrArg Configuration.left hfinal).trans output₂)
 
 /--
