@@ -1,4 +1,4 @@
-import AssistantMachine
+import HakuiKoyori.AssistantMachine
 
 /- 
   Hakui Koyori Number — milestone 0 plus the M1 machine extension.
