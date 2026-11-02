@@ -1,4 +1,6 @@
 import HakuiKoyori.AssistantMachine
+import HakuiKoyori.Simulation
+import HakuiKoyori.CompilerCore
 
 /- 
   Hakui Koyori Number — milestone 0 plus the M1 machine extension.
