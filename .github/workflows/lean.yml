@@ -40,3 +40,23 @@ jobs:
         run: lake env lean HakuiKoyori.lean
       - name: Check machine formalization
         run: lake env lean HakuiKoyori/AssistantMachine.lean
+      - name: Check simulation infrastructure
+        run: lake env lean HakuiKoyori/Simulation.lean
+      - name: Check compiler foundations
+        run: lake env lean HakuiKoyori/CompilerCore.lean
+      - name: Check concrete low-level macros
+        run: lake env lean HakuiKoyori/LowLevelMacros.lean
+      - name: Check MUL and TR macro semantics
+        run: lake env lean HakuiKoyori/MacroSemantics.lean
+      - name: Check macro-boundary simulation
+        run: lake env lean HakuiKoyori/BoundarySimulation.lean
+      - name: Check TM stack arithmetic semantics
+        run: lake env lean HakuiKoyori/StackSemantics.lean
+      - name: Check finite typed Turing machine semantics
+        run: lake env lean HakuiKoyori/FiniteTM.lean
+      - name: Check primitive MUL execution
+        run: lake env lean HakuiKoyori/PrimitiveMacroRuns.lean
+      - name: Check primitive TR execution
+        run: lake env lean HakuiKoyori/PrimitiveTransferRuns.lean
+      - name: Check primitive DIVREM tail execution
+        run: lake env lean HakuiKoyori/PrimitiveDivRemRuns.lean

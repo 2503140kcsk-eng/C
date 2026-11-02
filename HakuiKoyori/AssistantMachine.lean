@@ -133,17 +133,20 @@ theorem decodeTrace_encodeTrace (trace : Trace) :
   simp [decodeTrace, encodeTrace]
 
 /-- Read the selected counter from a configuration. -/
+@[expose]
 def readCounter (c : Configuration) : Counter → Nat
   | .left => c.left
   | .right => c.right
 
 /-- Update one selected counter, leaving the other fields unchanged. -/
+@[expose]
 def writeCounter (c : Configuration) (which : Counter) (value : Nat) :
     Configuration :=
   match which with
   | .left => { c with left := value }
   | .right => { c with right := value }
 
+@[expose]
 def setPC (c : Configuration) (next : Nat) : Configuration :=
   { c with pc := next }
 
@@ -151,6 +154,7 @@ def setPC (c : Configuration) (next : Nat) : Configuration :=
 Deterministic partial transition function. none means that the program
 counter is outside the finite instruction list, so the machine has halted.
 -/
+@[expose]
 def step (p : Program) (c : Configuration) : Option Configuration :=
   match p[c.pc]? with
   | none => none
