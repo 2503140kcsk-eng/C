@@ -65,7 +65,7 @@ theorem emitBlocksFrom_lookup (whole : List TemplateBlock) (start : Nat) :
           (relocateInstruction whole (blockStart whole (start + i)))
           (block[j]?) := by
   intro blocks
-  induction blocks with
+  induction blocks generalizing start with
   | nil =>
       intro i block j hblock hj
       simp at hblock
@@ -84,7 +84,13 @@ theorem emitBlocksFrom_lookup (whole : List TemplateBlock) (start : Nat) :
             simpa using hblock
           have hpc : start + (i + 1) = (start + 1) + i := by omega
           simp only [emitBlocksFrom, prefixLength]
-          rw [List.getElem?_append_right (by omega)]
+          have hheadLen :
+              (head.map (relocateInstruction whole
+                (blockStart whole start))).length = head.length := by
+            simp
+          rw [List.getElem?_append_right (by
+            rw [hheadLen]
+            omega)]
           have h := ih (start + 1) i block j hblock' hj
           simpa [hpc, Nat.add_assoc] using h
 
