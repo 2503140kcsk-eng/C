@@ -70,6 +70,14 @@ machine description. A compiler must consume a finite typed table (or
 bounded codes together with proofs that every next state and written symbol
 remain in range).
 
+The current `FiniteTuringMachine` structure proves only
+`0 < alphabetSize`. The unary I/O contract additionally needs a designated
+nonblank symbol; with blank fixed to digit `0` and unary fixed to digit `1`,
+the compiler signature must carry `hUnary : 1 < M.alphabetSize` (or an
+explicit nonzero `Fin M.alphabetSize` symbol). This witness is not currently
+part of `FiniteTuringMachine`, so it remains a formalization obligation and
+must not be silently inferred from `alphabetSize_pos`.
+
 #### Stage-A PUSH and POP algorithms
 
 For \`PUSH(X,d)\`, where \`X∈{L,R}\`, use the other temporary register
