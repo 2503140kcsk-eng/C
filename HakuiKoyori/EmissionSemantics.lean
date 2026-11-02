@@ -1,6 +1,6 @@
 module
 
-public import HakuiKoyori.LowLevelMacros
+public import HakuiKoyori.PrimitiveTransferRuns
 
 public section
 
@@ -100,6 +100,51 @@ theorem emitBlocks_lookup (blocks : List TemplateBlock) (i : Nat)
   rw [emitBlocks_eq_emitBlocksFrom]
   simpa [blockStart, Nat.zero_add] using
     emitBlocksFrom_lookup blocks 0 blocks i block j hblock hj
+
+
+
+/--
+A finite chain of positive left-counter decrement/jump instructions executes
+along an arbitrary sequence of program counters.  This is the reusable
+execution lemma for the positive-residue prefix of DIVREM: each instruction
+decreases the left counter by one and jumps to the next test PC.
+-/
+theorem runN_decJumpLeft_chain
+    (program : Program) (pcPath : Nat → Nat) :
+    ∀ (n a b : Nat),
+      (∀ i, i < n →
+        program[pcPath i]? =
+          some (Instruction.decJump Counter.left (pcPath (i + 1)))) →
+      runN n program ⟨pcPath 0, a + n, b⟩ =
+        some ⟨pcPath n, a, b⟩ := by
+  intro n
+  induction n generalizing pcPath with
+  | zero =>
+      intro a b hlookup
+      simp [runN]
+  | succ n ih =>
+      intro a b hlookup
+      have hfirst :
+          program[pcPath 0]? =
+            some (Instruction.decJump Counter.left (pcPath 1)) :=
+        hlookup 0 (by omega)
+      have hstep :
+          AssistantMachine.step program
+              ⟨pcPath 0, a + (n + 1), b⟩ =
+            some ⟨pcPath 1, a + n, b⟩ := by
+        simp [AssistantMachine.step, hfirst,
+          AssistantMachine.readCounter, AssistantMachine.writeCounter,
+          AssistantMachine.setPC] <;> omega
+      have htail :
+          ∀ i, i < n →
+            program[pcPath (i + 1)]? =
+              some (Instruction.decJump Counter.left (pcPath (i + 2))) := by
+        intro i hi
+        exact hlookup (i + 1) (by omega)
+      have hrun :=
+        ih (fun i => pcPath (i + 1)) a b htail
+      simp only [runN, hstep, Option.bind_some]
+      simpa using hrun
 
 end Compiler
 end HakuiKoyori
