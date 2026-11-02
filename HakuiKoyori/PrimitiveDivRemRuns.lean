@@ -216,24 +216,40 @@ theorem runN_relocatedTRHandler
   have hJumpIncRaw :
       handler[1 + r]? = some jumpInc := by
     rw [hhandler]
-    have h := getElem?_middle
-      ([entry] ++ residueCode) [jumpInc]
-      ([jump] ++ (transferCode ++ [finalInc, finalJump]))
-      0 (by simp)
-    have hlen' : ([entry] ++ residueCode).length = 1 + r := by
-      simp [residueCode]
-    simpa [entry, residueCode, jumpInc, List.append_assoc, hlen'] using h
+    let pre : Program := [entry] ++ residueCode
+    let suffix : Program := [jump] ++ (transferCode ++ [finalInc, finalJump])
+    have h := getElem?_middle pre [jumpInc] suffix 0 (by simp)
+    have hmiddle :
+        (pre ++ ([jumpInc] ++ suffix))[pre.length]? = some jumpInc := by
+      simpa using h
+    have hlist :
+        [entry] ++ (residueCode ++ ([jumpInc, jump] ++
+          (transferCode ++ [finalInc, finalJump]))) =
+          pre ++ ([jumpInc] ++ suffix) := by
+      simp [pre, suffix, List.append_assoc]
+    have hindex : 1 + r = pre.length := by
+      simp [pre, residueCode]
+      omega
+    rw [hlist, hindex]
+    exact hmiddle
   have hJumpRaw : handler[1 + r + 1]? = some jump := by
     rw [hhandler]
-    have h := getElem?_middle
-      ([entry] ++ residueCode ++ [jumpInc]) [jump]
-      (transferCode ++ [finalInc, finalJump])
-      0 (by simp)
-    have hlen' :
-        ([entry] ++ residueCode ++ [jumpInc]).length = 1 + r + 1 := by
-      simp [residueCode]
+    let pre : Program := [entry] ++ residueCode ++ [jumpInc]
+    let suffix : Program := transferCode ++ [finalInc, finalJump]
+    have h := getElem?_middle pre [jump] suffix 0 (by simp)
+    have hmiddle :
+        (pre ++ ([jump] ++ suffix))[pre.length]? = some jump := by
+      simpa using h
+    have hlist :
+        [entry] ++ (residueCode ++ ([jumpInc, jump] ++
+          (transferCode ++ [finalInc, finalJump]))) =
+          pre ++ ([jump] ++ suffix) := by
+      simp [pre, suffix, List.append_assoc]
+    have hindex : 1 + r + 1 = pre.length := by
+      simp [pre, residueCode]
       omega
-    simpa [entry, residueCode, jumpInc, jump, List.append_assoc, hlen'] using h
+    rw [hlist, hindex]
+    exact hmiddle
   have hTransferRaw : ∀ i, i < m →
       handler[3 + r + i]? = some (Instruction.inc .left) := by
     intro i hi
