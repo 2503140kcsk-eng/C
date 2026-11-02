@@ -81,12 +81,18 @@ theorem concreteMUL_replicate_step
     rw [concreteMUL_eq]
     rw [List.append_assoc]
     rw [List.getElem?_append_right
-      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
-        .decJump .left destination, .inc .left, .inc .left,
-        .decJump .left 1]) (by simp)]
+      (l₁ := ([
+        AssistantMachine.Instruction.decJump .left 7,
+        AssistantMachine.Instruction.decJump .right 4,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left destination,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
     simp only [Nat.add_sub_cancel_left]
     rw [List.getElem?_append_left
-      (l₁ := List.replicate factor (.inc .right)) hi]
+      (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
+      (i := i) hi]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -102,12 +108,18 @@ theorem concreteMUL_identity_first
     rw [concreteMUL_eq]
     rw [List.append_assoc]
     rw [List.getElem?_append_right
-      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
-        .decJump .left destination, .inc .left, .inc .left,
-        .decJump .left 1]) (by simp)]
+      (l₁ := ([
+        AssistantMachine.Instruction.decJump .left 7,
+        AssistantMachine.Instruction.decJump .right 4,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left destination,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
     simp only [Nat.add_sub_cancel_left]
     rw [List.getElem?_append_right
-      (l₁ := List.replicate factor (.inc .right)) (by simp)]
+      (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
+      (i := factor) (by simp)]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -124,13 +136,19 @@ theorem concreteMUL_identity_second
     rw [concreteMUL_eq]
     rw [List.append_assoc]
     rw [List.getElem?_append_right
-      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
-        .decJump .left destination, .inc .left, .inc .left,
-        .decJump .left 1]) (by simp)]
+      (l₁ := ([
+        AssistantMachine.Instruction.decJump .left 7,
+        AssistantMachine.Instruction.decJump .right 4,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left destination,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.inc .left,
+        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
     have hidx : 8 + factor = 7 + (factor + 1) := by omega
     rw [hidx, Nat.add_sub_cancel_left]
     rw [List.getElem?_append_right
-      (l₁ := List.replicate factor (.inc .right)) (by omega)]
+      (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
+      (i := factor + 1) (by omega)]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
