@@ -176,10 +176,19 @@ theorem divRemAuxFrom_eq_rebase
                 rw [rebaseBlock_comp]
                 simp [newNextOffset, oldNextOffset, hspan,
                   Nat.add_assoc]
-      simp only [divRemAuxFrom, divRemAux]
-      simp only [rebaseBlock, List.map_append, List.map_cons]
+      change
+        ([TemplateInstruction.decJump Counter.left (.offset newNextOffset)] ++
+          newHandler ++
+          divRemAuxFrom p destinationDiv destinationNondiv
+            fuel (residue + 1) newNextOffset) =
+        rebaseBlock offset
+          ([TemplateInstruction.decJump Counter.left (.offset oldNextOffset)] ++
+            oldHandler ++
+            rebaseBlock oldNextOffset
+              (divRemAux p destinationDiv destinationNondiv fuel
+                (residue + 1)))
       rw [htest, hhandler, hrest]
-      rfl
+      simp [rebaseBlock, List.map_append]
 
 /-- Rebase by zero is the identity map on a template block. -/
 theorem divRemLayout_rebaseBlock_zero (block : TemplateBlock) :
@@ -260,7 +269,7 @@ theorem divRemAuxFrom_test_lookup
           have hprefix :
               stagePrefix.length = divRemStageSpan p residue := by
             simp [stagePrefix, handler, rebaseBlock_length,
-              transferBlock_length, divRemStageSpan, divRemStageMultiplier,
+              transferBlock_length, divRemStageSpan,
               Nat.add_assoc]
             omega
           have hshape :
@@ -284,7 +293,8 @@ theorem divRemAuxFrom_test_lookup
                 divRemStageOffset p (residue + 1) i -
               stagePrefix.length =
                 divRemStageOffset p (residue + 1) i by
-              rw [hprefix]]
+              rw [hprefix]
+              omega]
           have hrec := ih (residue + 1)
             (offset + divRemStageSpan p residue) i (by omega)
           have hnext :
@@ -307,8 +317,7 @@ theorem divRemBlock_length
 theorem divRemBlock_test_lookup
     (p : Nat) (destinationDiv destinationNondiv : JumpTarget)
     (i : Nat) (hi : i < p) :
-    (divRemBlock p destinationDiv destinationNondiv)
-        [divRemStageOffset p 0 i]? =
+    (divRemBlock p destinationDiv destinationNondiv)[divRemStageOffset p 0 i]? =
       some (TemplateInstruction.decJump Counter.left
         (.offset (divRemStageOffset p 0 (i + 1)))) := by
   rw [divRemBlock_eq_divRemAuxFrom]
@@ -327,7 +336,9 @@ theorem divRemBlock_test_offset_lt_length
       divRemStageOffset p 0 i <
         divRemStageOffset p 0 (i + 1) := by
     rw [divRemStageOffset]
-    simpa using Nat.lt_add_of_pos_right (divRemStageSpan_pos p i)
+    have hpos : 0 < divRemStageSpan p (0 + i) := by
+      simpa using divRemStageSpan_pos p i
+    omega
   have hmono :
       divRemStageOffset p 0 (i + 1) ≤ divRemStageOffset p 0 p :=
     divRemStageOffset_mono p 0 (Nat.succ_le_of_lt hi)
@@ -344,8 +355,7 @@ theorem emitBlocks_divRem_test_lookup
     (hblock : blocks[pc]? = some block)
     (hdiv : block = divRemBlock p destinationDiv destinationNondiv)
     (i : Nat) (hi : i < p) :
-    (emitBlocks blocks)
-        [blockStart blocks pc + divRemStageOffset p 0 i]? =
+    (emitBlocks blocks)[blockStart blocks pc + divRemStageOffset p 0 i]? =
       some (Instruction.decJump Counter.left
         (blockStart blocks pc + divRemStageOffset p 0 (i + 1))) := by
   have hindex :
