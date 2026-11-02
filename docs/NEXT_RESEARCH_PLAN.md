@@ -1,63 +1,69 @@
 # Next research plan: assistant-machine Busy Beaver
 
-**Status: proposal only. Not part of the verified HKN_0 definition.**
+**Current status:** the exact M1 machine semantics and HKN_1 definitions have been committed to branch m1/two-counter-machine-formalization. The Lean workflow has not yet certified this branch. Treat M1 as implementation-pending until CI, compilation, and the axiom audit pass.
 
-## Why move beyond the current arithmetic grammar?
+## M0 baseline
 
-Milestone 0 proves diagonal dominance only over a deliberately small language of total arithmetic programs. Its strength is that every program evaluation is total and easy to formalize. Its weakness is equally clear: it says nothing about programs outside that grammar.
+Milestone 0 defines a finite language of total unary arithmetic programs and proves its own finite diagonal theorem. The verified HKN_0 source and prior successful CI commit remain the M0 baseline. M0 alone does not dominate arbitrary Turing machines or all total computable functions.
 
-The next candidate should model the “助手くん laboratory” as a finite catalogue of general-purpose machines. A Busy Beaver construction takes the maximum output among machines below a finite description bound that eventually halt. The description catalogue is finite, but deciding which machines halt is not generally computable. This gives a route to a rigorously defined **noncomputable yet finite natural number** without using ZF, ZFC, MK, or set-membership semantics.
+## M1 — frozen two-counter machine
 
-## Proposed mathematical definition
+The selected model is the deterministic two-counter machine with the exact instruction syntax:
+- inc(r): increment counter r and advance the instruction pointer;
+- decJump(r,q): if r=0, advance unchanged; otherwise decrement r and jump to q;
+- falling outside the finite instruction list halts;
+- the left counter is the output, and input n initializes (pc,left,right)=(0,n,0).
 
-First freeze one deterministic universal register-machine or Turing-machine model.
+This is not an informal choice of any model called “two-counter machine”. The instruction set is pinned to the Turing-complete variant described by Dudenhefner. The formal source currently encodes instructions, programs, configurations, and finite traces as natural numbers using pairing and finite-list Encodable instances.
 
-- A machine has a finite natural-number code (e).
-- A total decoder maps every natural number (e) to a machine. Invalid descriptions map to a fixed trivial machine.
-- The machine receives input (n).
-- Its one-step transition relation is deterministic and computable.
-- A halting execution has a finite trace and a unique natural-number output.
+Specification: [ASSISTANT_MACHINE_SPEC.md](ASSISTANT_MACHINE_SPEC.md)
 
-For a code bound (m) and input (n), let (C_m) be the finite list of codes (0,1,ldots,m). Define the halting-output catalogue
+## M1 proof obligations represented in the Lean source
 
-```text
-O(m,n) = [ output(e,n) | e in C_m and machine e halts on n ]
+1. Total decoding for instruction, program, configuration, and trace codes.
+2. Exact encode/decode round trips for valid descriptions, configurations, and traces.
+3. Deterministic partial one-step transition.
+4. Finite inductive execution traces with a natural-number code.
+5. Existence-based halting and a unique left-counter output.
+6. A finite catalogue of program codes from zero through m.
+7. Maximum halting output over that finite catalogue, defaulting nonhalting codes to zero.
+8. Diagonal theorem: every halting output in the catalogue is strictly below the maximum plus one.
+9. Code zero denotes an empty program, giving HKN_1 > HKN_0.
 
-B(m,n) = 1 + max(0 and all entries of O(m,n))
-HKN_1  = B(HKN_0, HKN_0)
-```
+These obligations are authored, but must not be marked VERIFIED until the pinned GitHub Actions workflow passes for the exact head commit and the axiom audit reports no unapproved axioms.
 
-The fixed code 0 will be chosen to be a machine that halts and returns its input, so the catalogue is nonempty and (HKN_1>HKN_0).
+## M2 — universality and computable-function domination
 
-The predicate “machine e halts on input n” is the existence of a finite execution trace. It is a proposition over natural-number-coded traces; the definition does not quantify over a universe of sets. Because (C_m) is finite, the collection of outputs that exist is finite and has a maximum. Extracting the output from a halting witness is noncomputable in general, but it still specifies one natural number.
+Primary source: Andrej Dudenhefner, Constructive Many-one Reduction from the Halting Problem to Semi-unification, CSL 2022, extended version in Logical Methods in Computer Science (2023). The paper defines a precise two-counter model with increment and conditional decrement/jump instructions and reduces Turing-machine halting to the two-counter halting problem via an intermediate multi-counter construction.
 
-This definition is not frozen until the machine model, decoder, output convention, and proof of determinism are fixed in Lean. In particular, the code-0 convention and universality must be proved rather than assumed.
+The next formal theorem must construct a two-counter program from a Turing-machine code and input, preserve halting, and preserve the chosen output convention. A statement in a paper is evidence for the mathematical result, not a substitute for the project’s Lean proof. Until the compiler/simulation theorem is kernel-checked, do not claim domination of all total computable functions.
 
-## Formal proof obligations
+## M3 — LNGN audit and comparison
 
-1. Define a deterministic machine syntax and finite code decoder.
-2. Define configurations and a total single-step transition function.
-3. Define bounded execution by primitive recursion on the number of steps.
-4. Prove that halting witnesses determine a unique output.
-5. Define the finite list of codes below a bound without using set theory.
-6. Define (B(m,n)) from the finite list and prove it is greater than every halting output in that catalogue.
-7. Prove (HKN_1>HKN_0).
-8. Prove the chosen machine model can simulate a conventional universal machine, if general computable-function domination is claimed.
-
-## What this would and would not establish
-
-A correctly formalized Busy Beaver construction can dominate all outputs of machines in its own finite code catalogue. With a suitable universal-machine coding and an asymptotic argument, its function can eventually dominate every total computable function.
-
-It does **not** follow that (HKN_1) exceeds LNGN. The LNGN function is defined through a stronger semantic/theoretic construction involving set theory. Busy Beaver dominance over computable functions is not a comparison against every noncomputable number definition. The LNGN comparison remains a separate, explicit theorem obligation.
+LNGN remains un-compared. Its published description uses a theory-language construction with set-theoretic vocabulary and substantial metatheoretic conditions. The no-set-theory constraint means the project needs an explicit value-preserving interpretation or a proven numeric bound. Neither notation size nor Busy Beaver domination over computable functions proves HKN_i > LNGN.
 
 ## Research sequence
 
-- **M1 — machine semantics:** exact code, decoder, configurations, execution, halting, and output.
-- **M2 — finite Busy Beaver bound:** define (B(m,n)) and prove its finite-catalogue diagonal theorem in Lean.
-- **M3 — strength theorem:** prove the precise computable-function domination result supported by the selected machine model.
-- **M4 — LNGN source formalization:** transcribe the exact FOTbHOST language, coding, axioms, satisfaction conditions, and metatheoretic assumptions from the original source. Do not assume consistency or soundness without proof.
-- **M5 — comparison:** either prove a no-set-theory lower bound that yields (HKN_i > LNGN), or record a rigorous obstruction. Do not announce victory without the theorem.
+- [ ] Compile M1 under Lean 4.35.0 and Mathlib v4.35.0.
+- [ ] Resolve every kernel, linter, and axiom-audit error; record the exact successful CI commit.
+- [ ] Check that all definitions satisfy the no-ZF/ZFC/MK semantic constraint.
+- [ ] Formalize the two-counter compiler and step-by-step simulation theorem.
+- [ ] Derive the precise total-computable-function domination corollary.
+- [ ] Formalize the exact LNGN source semantics or establish a rigorous obstruction.
+- [ ] Prove an explicit comparison theorem before making any LNGN size claim.
 
 ## Tool roles
 
-Lean remains the authority for definitions and proof checking. cvc5 may search for finite counterexamples; SymPy and SageMath may check small instances; GAP and Macaulay2 are optional and only enter if the chosen encoding creates algebraic subproblems; Naproche may cross-check natural-language specifications; LeanDojo may assist proof search. Sider Scholar and Parallel Search support source discovery; Context7 supports version-specific Lean documentation; Wolfram is an auxiliary independent calculator. None of these tools' outputs count as proof unless converted into kernel-checked Lean theorems.
+- Lean 4 kernel / GitHub Actions: final authority for definitions and proofs.
+- Mathlib v4.35.0: pairing/unpairing and finite-list encodings only at the machine foundation layer.
+- Sider Scholar: identify primary sources and theorem statements.
+- Parallel Search: cross-check the original definitions and bibliographic records.
+- Context7: version-appropriate Lean/Lake documentation.
+- cvc5: finite counterexample and arithmetic side-condition search; never a proof authority.
+- SymPy and SageMath: exact small-instance and bounded-run sanity checks.
+- LeanDojo-v2: optional retrieval/proof-state assistance; generated tactics still require kernel acceptance.
+- Naproche: independent natural-language specification consistency checks.
+- GAP and Macaulay2: not on the M1 critical path; use only if later algebraic/combinatorial subproblems require them.
+- Wolfram: optional symbolic calculation cross-check; never a proof authority.
+
+See [TOOL_ROLES.md](TOOL_ROLES.md) for the trust and evidence policy.
