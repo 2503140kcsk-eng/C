@@ -45,12 +45,14 @@ structure Registers3 where
 deriving DecidableEq, Repr
 
 /-- Read one virtual register. -/
+@[expose]
 def read3 (r : Registers3) : Register3 → Nat
   | .r0 => r.r0
   | .r1 => r.r1
   | .r2 => r.r2
 
 /-- Update one virtual register. -/
+@[expose]
 def write3 (r : Registers3) (which : Register3) (value : Nat) : Registers3 :=
   match which with
   | .r0 => { r with r0 := value }
@@ -80,6 +82,7 @@ def setPC3 (c : Configuration3) (next : Nat) : Configuration3 :=
 Deterministic partial operational semantics for the three-register machine.
 Falling off the finite instruction list is halting.
 -/
+@[expose]
 def step3 (p : Program3) (c : Configuration3) : Option Configuration3 :=
   match p[c.pc]? with
   | none => none
@@ -106,6 +109,7 @@ Prime-power encoding of the three virtual counters.
 The physical target's first counter stores this number at macro boundaries;
 the second physical counter is intended to be zero at those boundaries.
 -/
+@[expose]
 def primeCode (a b c : Nat) : Nat :=
   2 ^ a * (3 ^ b * 5 ^ c)
 
