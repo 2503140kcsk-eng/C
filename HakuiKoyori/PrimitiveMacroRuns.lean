@@ -75,36 +75,39 @@ theorem concreteMUL_replicate_step
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + i, data, scratch⟩ =
       some ⟨7 + i + 1, data, scratch + 1⟩ := by
-  rw [AssistantMachine.step, concreteMUL_eq]
-  rw [List.getElem?_append_right (by simp)]
-  have hidx : 7 + i - 7 = i := by omega
-  rw [hidx, List.getElem?_append_left hi]
-  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
-    AssistantMachine.setPC]
+  have hget :
+      (concreteMUL factor destination)[7 + i]? =
+        some (.inc .right) := by
+    rw [concreteMUL_eq]
+    simp [List.getElem?_append, List.getElem?_replicate, hi]
+  simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
+    AssistantMachine.writeCounter, AssistantMachine.setPC]
 
 theorem concreteMUL_identity_first
     (factor destination data scratch : Nat) :
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + factor, data, scratch⟩ =
       some ⟨8 + factor, data, scratch + 1⟩ := by
-  rw [AssistantMachine.step, concreteMUL_eq]
-  rw [List.getElem?_append_right (by simp)]
-  have hidx : 7 + factor - 7 = factor := by omega
-  rw [hidx, List.getElem?_append_right (by simp)]
-  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
-    AssistantMachine.setPC]
+  have hget :
+      (concreteMUL factor destination)[7 + factor]? =
+        some (.inc .right) := by
+    rw [concreteMUL_eq]
+    simp [List.getElem?_append]
+  simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
+    AssistantMachine.writeCounter, AssistantMachine.setPC]
 
 theorem concreteMUL_identity_second
     (factor destination data scratch : Nat) :
     AssistantMachine.step (concreteMUL factor destination)
       ⟨8 + factor, data, scratch + 1⟩ =
       some ⟨0, data, scratch⟩ := by
-  rw [AssistantMachine.step, concreteMUL_eq]
-  rw [List.getElem?_append_right (by simp)]
-  have hidx : 8 + factor - 7 = factor + 1 := by omega
-  rw [hidx, List.getElem?_append_right (by omega)]
-  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
-    AssistantMachine.setPC]
+  have hget :
+      (concreteMUL factor destination)[8 + factor]? =
+        some (.decJump .right 0) := by
+    rw [concreteMUL_eq]
+    simp [List.getElem?_append]
+  simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
+    AssistantMachine.writeCounter, AssistantMachine.setPC]
 
 theorem concreteMUL_replicate_run
     (factor destination i fuel data scratch : Nat)
@@ -272,7 +275,6 @@ theorem concreteMUL_exit
     AssistantMachine.readCounter, AssistantMachine.writeCounter,
     AssistantMachine.setPC, concreteMUL_eq]
 
-/-- All-input primitive correctness of the literal generated MUL block. -/
 /-- All-input primitive correctness of the literal generated MUL block. -/
 theorem concreteMUL_correct_run
     (factor destination input : Nat) :
