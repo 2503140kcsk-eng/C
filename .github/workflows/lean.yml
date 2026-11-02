@@ -56,3 +56,5 @@ jobs:
         run: lake env lean HakuiKoyori/FiniteTM.lean
       - name: Check primitive MUL execution
         run: lake env lean HakuiKoyori/PrimitiveMacroRuns.lean
+      - name: Check primitive TR execution
+        run: lake env lean HakuiKoyori/PrimitiveTransferRuns.lean
