@@ -75,7 +75,14 @@ theorem runN_right_loop_segment
         some ⟨root, a, b + 1⟩ := by
     simp [AssistantMachine.step, h2, AssistantMachine.readCounter,
       AssistantMachine.writeCounter, AssistantMachine.setPC]
-  simp [runN, hs0, hs1, hs2]
+  calc
+    runN 3 (pre ++ (middle ++ suffix)) ⟨pre.length, a, b⟩ =
+        (runN 1 (pre ++ (middle ++ suffix)) ⟨pre.length, a, b⟩).bind
+          (fun next => runN 2 (pre ++ (middle ++ suffix)) next) := by
+            simpa using runN_add 1 2 (pre ++ (middle ++ suffix))
+              ⟨pre.length, a, b⟩
+    _ = some ⟨root, a, b + 1⟩ := by
+      simp [runN, hs0, hs1, hs2]
 
 /-- At every nested offset, relocation leaves the DIVREM loop-back at root. -/
 theorem divRemAux_terminal_code
@@ -108,8 +115,8 @@ theorem runN_divRemAux_terminal_segment
 theorem getElem?_replicate_segment
     {α : Type} (pre suffix : List α) (count index : Nat)
     (instruction : α) (hindex : index < count) :
-    (pre ++ (List.replicate count instruction ++ suffix))
-      [pre.length + index]? = some instruction := by
+    List.getElem? (pre ++ (List.replicate count instruction ++ suffix))
+      (pre.length + index) = some instruction := by
   rw [List.getElem?_append_right
     (l₁ := pre) (l₂ := List.replicate count instruction ++ suffix)
     (i := pre.length + index) (by omega)]
@@ -184,6 +191,7 @@ theorem runN_relocatedTRHandler
           (residueCode ++
             ([jumpInc, jump] ++
               (transferCode ++ [finalInc, finalJump]))) := by
+    change relocatedTRHandler blocks root m r destinationPC = _
     rw [relocatedTRHandler_eq]
     simp [entry, residueCode, jumpInc, jump, transferCode,
       finalInc, finalJump]
@@ -255,7 +263,8 @@ theorem runN_relocatedTRHandler
       program[pre.length]? =
         some (Instruction.decJump .right (pre.length + 3 + r)) := by
     have h := hEmbed 0 (by rw [hlen]; omega)
-    simpa [entry, hprefix, Nat.add_assoc] using h.trans hEntryRaw
+    have haddr : root + (1 + (3 + r)) = root + (4 + r) := by omega
+    simpa [entry, hprefix, haddr] using h.trans hEntryRaw
   have hResidue : ∀ i, i < r →
       program[pre.length + 1 + i]? =
         some (Instruction.inc .left) := by
@@ -270,14 +279,19 @@ theorem runN_relocatedTRHandler
         some (Instruction.inc .left) := by
     have h := hEmbed (1 + r) (by rw [hlen]; omega)
     have hraw := hJumpIncRaw
-    simpa [jumpInc] using h.trans hraw
+    have hindex : pre.length + 1 + r = pre.length + (1 + r) := by omega
+    rw [hindex]
+    exact h.trans hraw
   have hJump :
       program[pre.length + 1 + r + 1]? =
         some (Instruction.decJump .left
           (resolveTarget blocks root (.sourcePC destinationPC))) := by
     have h := hEmbed (1 + r + 1) (by rw [hlen]; omega)
     have hraw := hJumpRaw
-    simpa [jump] using h.trans hraw
+    have hindex :
+        pre.length + 1 + r + 1 = pre.length + (1 + r + 1) := by omega
+    rw [hindex]
+    exact h.trans hraw
   have hTransfer : ∀ i, i < m →
       program[pre.length + 3 + r + i]? =
         some (Instruction.inc .left) := by
@@ -294,13 +308,20 @@ theorem runN_relocatedTRHandler
         some (Instruction.inc .left) := by
     have h := hEmbed (3 + r + m) (by rw [hlen]; omega)
     have hraw := hFinalIncRaw
-    simpa [finalInc] using h.trans hraw
+    have hindex :
+        pre.length + 3 + r + m = pre.length + (3 + r + m) := by omega
+    rw [hindex]
+    exact h.trans hraw
   have hFinalJump :
       program[pre.length + 3 + r + m + 1]? =
         some (Instruction.decJump .left (pre.length + 0)) := by
     have h := hEmbed (4 + r + m) (by rw [hlen]; omega)
     have hraw := hFinalJumpRaw
-    simpa [finalJump, hprefix, Nat.add_assoc] using h.trans hraw
+    have hindex :
+        pre.length + 3 + r + m + 1 =
+          pre.length + (4 + r + m) := by omega
+    rw [hindex]
+    simpa [finalJump, hprefix] using h.trans hraw
   have hrun := runN_transfer_correct_at
     program pre.length m r
       (resolveTarget blocks root (.sourcePC destinationPC)) a q
