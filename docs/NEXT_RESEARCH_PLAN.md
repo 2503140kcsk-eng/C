@@ -1,6 +1,6 @@
 # Next research plan: assistant-machine Busy Beaver
 
-**Current status:** the exact M1 machine semantics and HKN_1 definitions have been committed to branch m1/two-counter-machine-formalization. The Lean workflow has not yet certified this branch. Treat M1 as implementation-pending until CI, compilation, and the axiom audit pass.
+**Current status:** M1 is verified at commit `126147c89a3f870eb3dc6856450ae75e8cadd892` by [GitHub Actions run 41386200256](https://github.com/2503140kcsk-eng/C/actions/runs/41386200256). Lean 4.35.0 build, both direct source checks, and the configured 381-declaration axiom audit passed. The next unfinished milestone is the formalized compiler/simulation theorem, not more syntax work on M1.
 
 ## M0 baseline
 
@@ -30,7 +30,7 @@ Specification: [ASSISTANT_MACHINE_SPEC.md](ASSISTANT_MACHINE_SPEC.md)
 8. Diagonal theorem: every halting output in the catalogue is strictly below the maximum plus one.
 9. Code zero denotes an empty program, giving HKN_1 > HKN_0.
 
-These obligations are authored, but must not be marked VERIFIED until the pinned GitHub Actions workflow passes for the exact head commit and the axiom audit reports no unapproved axioms.
+**All M1 obligations above are verified** at the exact commit and workflow recorded at the top of this document. The audit allowlist is `propext`, `Classical.choice`, and `Quot.sound`; it is not a zero-classical-axiom claim.
 
 ## M2 — universality and computable-function domination
 
@@ -44,9 +44,9 @@ LNGN remains un-compared. Its published description uses a theory-language const
 
 ## Research sequence
 
-- [ ] Compile M1 under Lean 4.35.0 and Mathlib v4.35.0.
-- [ ] Resolve every kernel, linter, and axiom-audit error; record the exact successful CI commit.
-- [ ] Check that all definitions satisfy the no-ZF/ZFC/MK semantic constraint.
+- [x] Compile M1 under Lean 4.35.0 and Mathlib v4.35.0.
+- [x] Resolve every kernel, linter, and axiom-audit error; record the exact successful CI commit.
+- [x] Check that all definitions satisfy the no-ZF/ZFC/MK semantic constraint.
 - [ ] Formalize the two-counter compiler and step-by-step simulation theorem.
 - [ ] Derive the precise total-computable-function domination corollary.
 - [ ] Formalize the exact LNGN source semantics or establish a rigorous obstruction.

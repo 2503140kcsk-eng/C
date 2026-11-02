@@ -11,15 +11,28 @@
 
 M0 does not establish general computable-function domination or a comparison with LNGN.
 
-## M1 — implementation submitted; verification pending
+## M1 — verified two-counter machine and bounded diagonal theorem
 
-The branch m1/two-counter-machine-formalization adds:
-- AssistantMachine.lean: exact two-counter instruction semantics; total instruction/program/configuration/trace decoders; canonical natural-number encodings; deterministic step; encoded finite execution traces; halting-output uniqueness; finite maximum-output catalogue; Busy Beaver diagonal theorem.
-- An M1 extension in HakuiKoyori.lean: hakuiKoyoriNumber1, a definition of HKN_1, and the theorem that HKN_1 > HKN_0.
-- Mathlib pinned to v4.35.0, matching the existing Lean 4.35.0 toolchain, for pairing and list encoding.
-- CI configured to build both formalization files and audit the HKN root.
+**State: VERIFIED on 2026-11-02.**
 
-**Important:** The source has been pushed to the branch, but the actual Lean compile, CI run, and axiom-audit result have not been confirmed yet. Therefore M1 is not labelled verified. Any compile failure must be resolved and the exact passing CI commit recorded before the milestone is accepted.
+- Verified commit: `126147c89a3f870eb3dc6856450ae75e8cadd892`
+- Successful GitHub Actions run: https://github.com/2503140kcsk-eng/C/actions/runs/41386200256
+- Toolchain: Lean 4.35.0; Mathlib pinned to v4.35.0.
+- Build: `lake build` succeeded (711 build jobs).
+- Direct checks: `lake env lean HakuiKoyori.lean` and `lake env lean HakuiKoyori/AssistantMachine.lean` both succeeded.
+- Axiom audit: 381 declarations under `HakuiKoyori` audited; all axioms were within the explicit allowlist `propext`, `Classical.choice`, and `Quot.sound`.
+
+M1 provides:
+- deterministic two-counter machine with finite instruction-list descriptions;
+- total natural-number encoding/decoding for instructions, programs, configurations, and finite traces;
+- deterministic one-step operational semantics;
+- finite execution traces, with a Type-valued trace witness wrapped in `Nonempty` in the halting proposition;
+- uniqueness of halting output;
+- finite program-code catalogue 0,...,m and a noncomputably selected maximum halting output;
+- bounded Busy Beaver-style diagonal theorem;
+- HKN_1 definition and Lean theorem HKN_1 > HKN_0.
+
+The use of `Classical.choice` is explicitly permitted by the current audit configuration. The output selector is noncomputable; it does not provide an algorithm deciding which arbitrary machines halt.
 
 ## Exact M1 model
 
@@ -39,12 +52,12 @@ Until further formalization, the project does not claim:
 - a separately formalized proof that the Busy Beaver function is noncomputable;
 - HKN_1 > LNGN or any other LNGN comparison.
 
-The published literature supports the universality of the selected two-counter instruction set, but a paper citation does not substitute for the compiler and simulation theorem in this repository.
+The published literature supports the universality of the selected two-counter instruction set, but that paper-level theorem is not a substitute for this repository's value-preserving compiler proof.
 
 ## Next gate
 
-1. Obtain a green GitHub Actions run on the exact M1 branch commit.
-2. Inspect all build and axiom-audit logs; ensure no sorry and no unapproved axioms.
-3. Record the successful commit hash and CI run.
-4. Formalize and kernel-check the Turing-machine-to-two-counter simulation.
-5. Handle LNGN in a separate exact-semantics comparison project.
+1. Formalize and kernel-check a Turing-machine-to-two-counter compiler.
+2. Prove step-by-step simulation, including input and output preservation.
+3. Derive the precise total-computable-function domination corollary.
+4. Audit the exact LNGN source semantics and determine whether a set-theory-free, value-preserving interpretation is possible.
+5. Prove a separate explicit comparison theorem before making any LNGN size claim.

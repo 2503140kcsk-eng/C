@@ -1,13 +1,13 @@
 # M1: Assistant-machine specification
 
-**Status: implementation committed on the M1 branch; Lean CI and axiom audit are pending.**
+**Status: VERIFIED** on commit `126147c89a3f870eb3dc6856450ae75e8cadd892` by [GitHub Actions run 41386200256](https://github.com/2503140kcsk-eng/C/actions/runs/41386200256).
 This document freezes the mathematical model. It does not claim that the universality compiler or LNGN comparison has been formalized.
 
 ## 1. Foundational boundary
 
 The machine semantics use finite inductive syntax, natural numbers, finite lists, functions, and propositions. The formal definitions do not introduce a set-membership predicate or ZF, ZFC, or MK axioms. The project pins Mathlib v4.35.0, matching Lean 4.35.0, for the standard natural-number pairing and finite-list encoding.
 
-The distinction is important: a library may contain general set-theoretic mathematics in unrelated modules, while the machine's actual state and transition definitions remain over Nat and List. The axiom audit is a separate check and must pass for the exact CI commit.
+The distinction is important: a library may contain general set-theoretic mathematics in unrelated modules, while the machine's actual state and transition definitions remain over Nat and List. The axiom audit checked 381 declarations under HakuiKoyori; all axioms were within the allowlist `propext`, `Classical.choice`, and `Quot.sound`.
 
 ## 2. Machine model
 
@@ -53,11 +53,11 @@ step(program, configuration) is a partial deterministic function returning eithe
 
 step_deterministic proves that two some successors from the same program and configuration are equal.
 
-ExecutionTrace program start trace final is an inductive proposition:
+ExecutionTrace program start trace final is an inductive Type-valued family:
 - a terminal trace consists of the single configuration c, with step program c = none;
 - a nonterminal trace consists of c followed by the trace from its unique successor.
 
-Thus a trace is a finite list including its initial and final configurations. It carries a natural-number code through encodeTrace.
+Thus a trace is a finite list including its initial and final configurations. It carries a natural-number code through encodeTrace. The halting proposition wraps this Type-valued witness in `Nonempty`, keeping halting in Prop while allowing proofs to inspect trace data.
 
 HaltsWithOutput program input output means that there exists a natural-number trace code whose decoded trace is a valid execution from the initial configuration and terminates in a configuration whose left counter equals output. This definition expresses halting by the existence of a finite, natural-number-coded execution trace; it does not ask a program to decide nonhalting.
 
