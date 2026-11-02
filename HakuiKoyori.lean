@@ -5,6 +5,7 @@ import HakuiKoyori.CompilerCore
 import HakuiKoyori.LowLevelMacros
 
 import HakuiKoyori.MacroSemantics
+import HakuiKoyori.BoundarySimulation
 /- 
   Hakui Koyori Number — milestone 0 plus the M1 machine extension.
   M0 remains a finite set-theory-free diagonal construction over a small
