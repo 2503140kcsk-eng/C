@@ -75,25 +75,30 @@ theorem concreteMUL_replicate_step
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + i, data, scratch⟩ =
       some ⟨7 + i + 1, data, scratch + 1⟩ := by
+  let prefix : Program :=
+    [AssistantMachine.Instruction.decJump .left 7,
+     AssistantMachine.Instruction.decJump .right 4,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left destination,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left 1]
   have hget :
       (concreteMUL factor destination)[7 + i]? =
         some (.inc .right) := by
-    rw [concreteMUL_eq]
-    rw [List.append_assoc]
-    rw [List.getElem?_append_right
-      (l₁ := ([
-        AssistantMachine.Instruction.decJump .left 7,
-        AssistantMachine.Instruction.decJump .right 4,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left destination,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
-    simp only [Nat.add_sub_cancel_left]
+    rw [concreteMUL_eq, List.append_assoc]
+    change (prefix ++
+      (List.replicate factor (AssistantMachine.Instruction.inc .right) ++
+        [AssistantMachine.Instruction.inc .right,
+         AssistantMachine.Instruction.decJump .right 0]))[7 + i]? =
+        some (AssistantMachine.Instruction.inc .right)
+    rw [List.getElem?_append_right (l₁ := prefix) (i := 7 + i)
+      (by simp [prefix])]
+    rw [show 7 + i - prefix.length = i by simp [prefix]]
     rw [List.getElem?_append_left
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
       (i := i) hi]
-    simp
+    exact List.getElem?_replicate_of_lt hi
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
 
@@ -102,25 +107,31 @@ theorem concreteMUL_identity_first
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + factor, data, scratch⟩ =
       some ⟨8 + factor, data, scratch + 1⟩ := by
+  let prefix : Program :=
+    [AssistantMachine.Instruction.decJump .left 7,
+     AssistantMachine.Instruction.decJump .right 4,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left destination,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left 1]
   have hget :
       (concreteMUL factor destination)[7 + factor]? =
         some (.inc .right) := by
-    rw [concreteMUL_eq]
-    rw [List.append_assoc]
-    rw [List.getElem?_append_right
-      (l₁ := ([
-        AssistantMachine.Instruction.decJump .left 7,
-        AssistantMachine.Instruction.decJump .right 4,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left destination,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + factor) (by simp)]
-    simp only [Nat.add_sub_cancel_left]
+    rw [concreteMUL_eq, List.append_assoc]
+    change (prefix ++
+      (List.replicate factor (AssistantMachine.Instruction.inc .right) ++
+        [AssistantMachine.Instruction.inc .right,
+         AssistantMachine.Instruction.decJump .right 0]))[7 + factor]? =
+        some (AssistantMachine.Instruction.inc .right)
+    rw [List.getElem?_append_right (l₁ := prefix) (i := 7 + factor)
+      (by simp [prefix])]
+    rw [show 7 + factor - prefix.length = factor by simp [prefix]]
     rw [List.getElem?_append_right
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
       (i := factor) (by simp)]
-    simp
+    rw [Nat.sub_self]
+    rfl
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
   omega
@@ -130,26 +141,31 @@ theorem concreteMUL_identity_second
     AssistantMachine.step (concreteMUL factor destination)
       ⟨8 + factor, data, scratch + 1⟩ =
       some ⟨0, data, scratch⟩ := by
+  let prefix : Program :=
+    [AssistantMachine.Instruction.decJump .left 7,
+     AssistantMachine.Instruction.decJump .right 4,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left destination,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.inc .left,
+     AssistantMachine.Instruction.decJump .left 1]
   have hget :
       (concreteMUL factor destination)[8 + factor]? =
         some (.decJump .right 0) := by
-    rw [concreteMUL_eq]
-    rw [List.append_assoc]
-    rw [List.getElem?_append_right
-      (l₁ := ([
-        AssistantMachine.Instruction.decJump .left 7,
-        AssistantMachine.Instruction.decJump .right 4,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left destination,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 8 + factor) (by simp)]
-    have hidx : 8 + factor = 7 + (factor + 1) := by omega
-    rw [hidx, Nat.add_sub_cancel_left]
+    rw [concreteMUL_eq, List.append_assoc]
+    change (prefix ++
+      (List.replicate factor (AssistantMachine.Instruction.inc .right) ++
+        [AssistantMachine.Instruction.inc .right,
+         AssistantMachine.Instruction.decJump .right 0]))[8 + factor]? =
+        some (AssistantMachine.Instruction.decJump .right 0)
+    rw [List.getElem?_append_right (l₁ := prefix) (i := 8 + factor)
+      (by omega)]
+    rw [show 8 + factor - prefix.length = factor + 1 by simp [prefix] <;> omega]
     rw [List.getElem?_append_right
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
       (i := factor + 1) (by omega)]
-    simp
+    rw [show factor + 1 - factor = 1 by omega]
+    rfl
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
 
