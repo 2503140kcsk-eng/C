@@ -162,13 +162,7 @@ theorem turingStep_none_iff {base : Nat} {delta : TMDelta}
     {configuration : TMConfiguration} :
     turingStep base delta configuration = none ↔
       delta configuration.state configuration.current = none := by
-  constructor
-  · intro hstep
-    cases hdelta : delta configuration.state configuration.current with
-    | none => exact hdelta
-    | some action =>
-        simp [turingStep, hdelta] at hstep
-  · intro hdelta
+  cases hdelta : delta configuration.state configuration.current <;>
     simp [turingStep, hdelta]
 
 /-- One step with a stay action only changes the state and current symbol. -/
