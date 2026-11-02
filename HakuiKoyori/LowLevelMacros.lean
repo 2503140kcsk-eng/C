@@ -71,6 +71,39 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
 def identityJump (which : Counter) (target : JumpTarget) : TemplateBlock :=
   [.inc which, .decJump which target]
 
+/-!
+An unconditional jump is not a primitive instruction in the selected ISA.
+The following theorem checks its two-instruction implementation directly
+against the actual M1 transition function.
+-/
+
+/-- The identity-jump block preserves both counter values and reaches its target. -/
+theorem identityJump_correct (which : Counter) (target a b : Nat) :
+    ∃ middle : Configuration,
+      step [.inc which, .decJump which target] ⟨0, a, b⟩ = some middle ∧
+      step [.inc which, .decJump which target] middle =
+        some ⟨target, a, b⟩ := by
+  cases which with
+  | left =>
+      refine ⟨⟨1, a + 1, b⟩, ?_, ?_⟩ <;>
+        simp [step, readCounter, writeCounter, setPC]
+  | right =>
+      refine ⟨⟨1, a, b + 1⟩, ?_, ?_⟩ <;>
+        simp [step, readCounter, writeCounter, setPC]
+
+@[simp] theorem resolveTarget_offset (blocks : List TemplateBlock)
+    (base offset : Nat) :
+    resolveTarget blocks base (.offset offset) = base + offset := rfl
+
+@[simp] theorem resolveTarget_blockStart (blocks : List TemplateBlock)
+    (base : Nat) :
+    resolveTarget blocks base .blockStart = base := rfl
+
+@[simp] theorem resolveTarget_sourcePC (blocks : List TemplateBlock)
+    (base pc : Nat) :
+    resolveTarget blocks base (.sourcePC pc) =
+      if pc < blocks.length then blockStart blocks pc else blocksLength blocks := rfl
+
 /--
 Multiply the left counter by p, starting with right = 0.
 The exit target is symbolic and the block uses only inc/decJump.
