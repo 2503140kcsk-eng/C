@@ -262,8 +262,12 @@ theorem runN_relocatedTRHandler
       program[pre.length]? =
         some (Instruction.decJump .right (pre.length + 3 + r)) := by
     have h := hEmbed 0 (by rw [hlen]; omega)
-    have haddr : root + 1 + (3 + r) = root + 1 + 3 + r := by omega
-    simpa [entry, hprefix, haddr] using h.trans hEntryRaw
+    have h' : program[pre.length]? = handler[0]? := by simpa using h
+    have haddr : root + 1 + (3 + r) = pre.length + 3 + r := by omega
+    change handler[0]? =
+      some (Instruction.decJump .right (root + 1 + (3 + r))) at hEntryRaw
+    rw [haddr] at hEntryRaw
+    exact h'.trans hEntryRaw
   have hResidue : ∀ i, i < r →
       program[pre.length + 1 + i]? =
         some (Instruction.inc .left) := by
