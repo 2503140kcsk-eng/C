@@ -58,3 +58,6 @@ jobs:
         run: lake env lean HakuiKoyori/PrimitiveMacroRuns.lean
       - name: Check primitive TR execution
         run: lake env lean HakuiKoyori/PrimitiveTransferRuns.lean
+
+      - name: Check emitted-program lookup semantics
+        run: lake env lean HakuiKoyori/EmissionSemantics.lean
