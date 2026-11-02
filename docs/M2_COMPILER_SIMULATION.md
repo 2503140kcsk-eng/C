@@ -149,7 +149,45 @@ Only after the final two theorems pass the pinned Lean kernel and the
 configured axiom audit may this repository claim that this target machine
 simulates the selected TM model with output preserved.
 
-## 3. Simulation relation and theorem shape
+## 3. Input/output encoding contract
+
+To avoid silently assuming identity encodings, the surface source is fixed as a
+deterministic one-tape Turing machine over a finite alphabet containing blank
+and a distinguished unary output symbol.
+
+At the initial source configuration, the input tape is a finite word
+`inputTape(n)` beginning at the head and blank outside that finite support.
+Its right-stack code is `ρ = encodeStack(inputTape(n))`; the left stack and
+scratch register are zero. Thus the target's M1 input is the explicit
+computable code
+
+`inputCode(n) = primeCode(0, ρ, 0) = 3^ρ`.
+
+The compiler theorem is therefore stated for the encoded target input, not
+incorrectly asserted for the same raw integer on both machines.
+
+A halting source machine is required to leave its natural-number result as a
+unary block `1^v` beginning at the head, followed by blank. The Stage-A
+three-register cleanup macro scans that block, increments virtual register
+`r0` once per unary symbol, and returns with the arithmetic scratch register
+zero. The Stage-B target output macro then repeatedly divides the prime code
+by 2 while it is even, incrementing the physical right counter once per exact
+division. By `two_dvd_primeCode_iff`, the number of such divisions is exactly
+the exponent of 2, namely the value in `r0`. It then clears the residual odd
+cofactor from the physical left counter and transfers the right counter to
+the left. This is intended to leave target output `v` in the M1 left
+counter and right counter zero. The macro and its termination/output theorem
+are still unimplemented.
+
+The intended final theorem has the shape
+
+`TMHaltsWithUnaryOutput M n v ↔ AssistantMachine.HaltsWithOutput
+  (compileTM M) (inputCode n) v`.
+
+This fixes the source model, input encoding, output convention, and observable
+value before claiming semantic preservation.
+
+## 4. Simulation relation and theorem shape
 
 Let R relate a source configuration s and target configuration t.
 At macro boundaries:
@@ -175,22 +213,27 @@ This rules out target-only infinite runs and target halts inside an unfinished
 macro. Determinism of the existing target transition function is already
 proved in M1; determinism of step3 is proved in CompilerCore.lean.
 
-## 4. Composition theorem
+## 5. Composition theorem
 
 If C1 simulates S with relation R1, and C2 simulates C1 with relation R2,
 define the composite relation
 
 R(s,t) := there exists m, R1(s,m) ∧ R2(m,t).
 
-The finite-run simulation theorem composes by concatenating the target
-segments. The proof is induction on the first simulation witness, followed
-by induction on the second, with transitivity of finite execution closure.
-The progress measure is layered: Stage-A stack macro fuel and Stage-B
+This composition layer is now formalized generically in
+`HakuiKoyori/Simulation.lean`: `StepStar` and `StepPlus` model finite runs,
+`ForwardSimulation` requires at least one target step for every source step,
+`forwardSimulation_preservesPlus` extends that property to finite source
+runs, and `forwardSimulation_compose` composes two compiler passes using an
+existential intermediate state. This theorem is proof infrastructure only;
+it does not prove that the concrete TM/three-register/two-counter passes
+satisfy its premises. The concrete proof still uses target segments that
+concatenate by transitivity of finite execution closure. The progress measure is layered: Stage-A stack macro fuel and Stage-B
 prime arithmetic loop fuel. A lexicographic measure (first the current
 source-step phase, then the decreasing loop counter) prevents infinite
 silent stuttering.
 
-## 5. Tool and repository assignments (free/local/OSS only)
+## 6. Tool and repository assignments (free/local/OSS only)
 
 The roles below separate research discovery, computation, and proof authority.
 
@@ -212,7 +255,7 @@ The roles below separate research discovery, computation, and proof authority.
 
 The starred repositories are not executables exposed through this chat. Their public source, issues, and documentation may be inspected; numerical tools are not silently run. The role assignment is a research workflow, not a claim that these projects are coordinated autonomous agents.
 
-## 6. Trust and acceptance policy
+## 7. Trust and acceptance policy
 
 - No sorry, admit, unchecked axiom, or opaque external result may discharge a theorem.
 - Classical.choice may appear only where the existing project's explicit
@@ -225,7 +268,7 @@ The starred repositories are not executables exposed through this chat. Their pu
 - Do not claim full semantic preservation from the prime-code identities
   alone.
 
-## 7. Current honest status
+## 8. Current honest status
 
 Proved in this branch's source: three-register machine syntax,
 configuration, deterministic one-step semantics, positive prime code,
