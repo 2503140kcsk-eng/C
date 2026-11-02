@@ -192,7 +192,7 @@ theorem trRun_spec (m r a q : Nat) :
       simp only [Nat.mul_succ, Prod.mk.injEq]
       constructor
       · omega
-      · rfl
+      · trivial
 
 /-- Kernel-checked macro-level correctness of TR(m,r). -/
 theorem TR_correct (m r q : Nat) :
