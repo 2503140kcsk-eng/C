@@ -39,4 +39,4 @@ jobs:
       - name: Check standalone formalization
         run: lake env lean HakuiKoyori.lean
       - name: Check machine formalization
-        run: lake env lean AssistantMachine.lean
+        run: lake env lean HakuiKoyori/AssistantMachine.lean
