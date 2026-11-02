@@ -1,75 +1,63 @@
 # Formal status
 
-## Milestone 0 — verified
+## M0 — verified baseline
 
-**State: Lean CI PASS.** The candidate definition and its diagonal theorem were checked by the Lean kernel under the pinned Lean 4.35.0 toolchain.
+**State: previously verified.** The HKN_0 arithmetic-program candidate and its diagonal theorem were checked under Lean 4.35.0.
 
-- Verified commit: `fb5ab1dfd0b90469efca745195744732283f843b`
-- GitHub Actions run: https://github.com/2503140kcsk-eng/C/actions/runs/41358704214
-- Final run conclusion: `success`
-- Successful job: `lean-proof`
-- Successful checks: Lake build, direct `lake env lean HakuiKoyori.lean`, and the configured `axiom-audit`.
-- No Mathlib or third-party Lean dependency is used by this milestone.
+- Verified M0 commit: fb5ab1dfd0b90469efca745195744732283f843b
+- Prior successful GitHub Actions run: https://github.com/2503140kcsk-eng/C/actions/runs/41358704214
+- Checks recorded for M0: Lake build, direct Lean source check, and configured axiom audit.
+- M0 used no Mathlib or third-party Lean dependency.
 
-The axiom audit uses the Lean Action's conventional allowlist (`propext`, `Classical.choice`, and `Quot.sound`). This is not a claim that Lean has no foundational axioms; it means the project passed that configured audit. The Lean source contains no `sorry`.
+M0 does not establish general computable-function domination or a comparison with LNGN.
 
-## Definition in `HakuiKoyori.lean`
+## M1 — verified two-counter machine and bounded diagonal theorem
 
-The file defines:
+**State: VERIFIED on 2026-11-02.**
 
-- a finite inductive syntax `AssistantCode`;
-- a total evaluator over natural numbers;
-- a finite list `assistants n` containing every code up to syntax depth `n`;
-- the maximum output of that catalogue at input `n`;
-- the diagonal function `diagonal n = maximumAssistantOutput n + 1`;
-- `tenTower 0 = 1` and `tenTower (n+1) = 10 ^ tenTower n`;
-- `firstHarvest = diagonal (tenTower 10)`;
-- `hakuiKoyoriNumber = diagonal firstHarvest`.
+- Verified commit: `126147c89a3f870eb3dc6856450ae75e8cadd892`
+- Successful GitHub Actions run: https://github.com/2503140kcsk-eng/C/actions/runs/41386200256
+- Toolchain: Lean 4.35.0; Mathlib pinned to v4.35.0.
+- Build: `lake build` succeeded (711 build jobs).
+- Direct checks: `lake env lean HakuiKoyori.lean` and `lake env lean HakuiKoyori/AssistantMachine.lean` both succeeded.
+- Axiom audit: 381 declarations under `HakuiKoyori` audited; all axioms were within the explicit allowlist `propext`, `Classical.choice`, and `Quot.sound`.
 
-Equivalently, writing (D(n)) for `diagonal n` and (T) for `tenTower`:
+M1 provides:
+- deterministic two-counter machine with finite instruction-list descriptions;
+- total natural-number encoding/decoding for instructions, programs, configurations, and finite traces;
+- deterministic one-step operational semantics;
+- finite execution traces, with a Type-valued trace witness wrapped in `Nonempty` in the halting proposition;
+- uniqueness of halting output;
+- finite program-code catalogue 0,...,m and a noncomputably selected maximum halting output;
+- bounded Busy Beaver-style diagonal theorem;
+- HKN_1 definition and Lean theorem HKN_1 > HKN_0.
 
-```text
-HKN_0 = D(D(T(10)))
-```
+The use of `Classical.choice` is explicitly permitted by the current audit configuration. The output selector is noncomputable; it does not provide an algorithm deciding which arbitrary machines halt.
 
-## Central theorem
+## Exact M1 model
 
-The main theorem is:
+The machine has two natural-number counters, a finite list of instructions, and a natural-number program counter:
+- inc(r): increment r and advance the program counter.
+- decJump(r,q): if r=0, advance unchanged; otherwise decrement r and jump to q.
+- An out-of-range program counter is a halting configuration.
+- Input n initializes (pc,left,right)=(0,n,0); output is the left counter.
 
-```lean
-hakuiKoyoriNumber_dominates_catalogue
-```
+The exact semantics, encoding, trace relation, and theorem statements are documented in [ASSISTANT_MACHINE_SPEC.md](ASSISTANT_MACHINE_SPEC.md).
 
-It states that every assistant program with syntax depth at most `firstHarvest` has output strictly below `hakuiKoyoriNumber` when evaluated at `firstHarvest`.
+## Claims deliberately not made
 
-The proof follows from:
-1. every code occurs in the finite catalogue at its own depth;
-2. the catalogue is monotone in the depth bound;
-3. every member of a finite list is bounded by the list maximum;
-4. the diagonal adds one to that maximum.
+Until further formalization, the project does not claim:
+- a Lean-verified simulation of Turing machines by this model;
+- domination of all total computable functions;
+- a separately formalized proof that the Busy Beaver function is noncomputable;
+- HKN_1 > LNGN or any other LNGN comparison.
 
-The corollary `hakuiKoyoriNumber_gt_identity_at_firstHarvest` applies the main theorem to the identity/input program.
+The published literature supports the universality of the selected two-counter instruction set, but that paper-level theorem is not a substitute for this repository's value-preserving compiler proof.
 
-## What this proof does not establish
+## Next gate
 
-- It does not dominate arbitrary Turing machines.
-- It does not dominate all total computable functions.
-- It does not dominate all formal theories.
-- It does not prove `hakuiKoyoriNumber > LNGN`.
-- It does not prove consistency or soundness of FOTbHOST.
-- It does not use ZF, ZFC, MK, or set-membership semantics to define HKN_0.
-
-The current object is a formalized finite candidate and a sound initial milestone, not the final answer to the LNGN comparison objective.
-
-## Next formalization target
-
-The next candidate direction is a finite-description **assistant-machine Busy Beaver** construction:
-
-- define a small register-machine or Turing-machine language over natural-number codes;
-- define a deterministic step relation and finite execution traces;
-- define halting/output semantics;
-- take the maximum output of every halting machine in a finite code-bounded catalogue, then add one.
-
-The catalogue would be finite, while the halting test is not generally decidable. This can yield a precisely defined noncomputable finite number without invoking ZF/ZFC/MK. It would strictly exceed all halting outputs in its own bounded catalogue. It would **still not automatically exceed LNGN**: the comparison theorem remains a separate requirement.
-
-This is a research proposal, not a theorem already present in the Lean source.
+1. Formalize and kernel-check a Turing-machine-to-two-counter compiler.
+2. Prove step-by-step simulation, including input and output preservation.
+3. Derive the precise total-computable-function domination corollary.
+4. Audit the exact LNGN source semantics and determine whether a set-theory-free, value-preserving interpretation is possible.
+5. Prove a separate explicit comparison theorem before making any LNGN size claim.
