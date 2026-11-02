@@ -129,7 +129,7 @@ theorem divRemAuxFrom_eq_rebase
   induction fuel with
   | zero =>
       intro residue offset
-      simp [divRemAuxFrom, divRemAux, rebaseBlock]
+      simp [divRemAuxFrom, divRemAux, rebaseBlock, rebaseInstruction, rebaseTarget]
   | succ fuel ih =>
       intro residue offset
       let multiplier := divRemStageMultiplier p residue
@@ -143,8 +143,8 @@ theorem divRemAuxFrom_eq_rebase
       let newNextOffset := offset + divRemStageSpan p residue
       have hspan : divRemStageSpan p residue = oldNextOffset := by
         dsimp [oldNextOffset, oldHandler, multiplier, destination]
-        exact (divRemStageSpan_eq_handler_length
-          p residue destination).symm
+        exact divRemStageSpan_eq_handler_length
+          p residue destination
       have htest :
           TemplateInstruction.decJump Counter.left (.offset newNextOffset) =
             rebaseInstruction offset
@@ -155,7 +155,6 @@ theorem divRemAuxFrom_eq_rebase
           newHandler = rebaseBlock offset oldHandler := by
         dsimp [newHandler, oldHandler]
         rw [rebaseBlock_comp]
-        simp [Nat.add_assoc]
       have hrest :
           divRemAuxFrom p destinationDiv destinationNondiv
               fuel (residue + 1) newNextOffset =
@@ -268,7 +267,8 @@ theorem divRemAuxFrom_test_lookup
               divRemAuxFrom p destinationDiv destinationNondiv
                   (fuel + 1) residue offset =
                 stagePrefix ++ rest := by
-            simp [divRemAuxFrom, stagePrefix, rest, List.append_assoc]
+            simp [divRemAuxFrom, stagePrefix, rest, handler, multiplier,
+              destination, List.append_assoc]
           have hindex :
               divRemStageOffset p residue (i + 1) =
                 divRemStageSpan p residue +
@@ -327,7 +327,7 @@ theorem divRemBlock_test_offset_lt_length
       divRemStageOffset p 0 i <
         divRemStageOffset p 0 (i + 1) := by
     rw [divRemStageOffset]
-    exact Nat.lt_add_of_pos_right (divRemStageSpan_pos p i)
+    simpa using Nat.lt_add_of_pos_right (divRemStageSpan_pos p i)
   have hmono :
       divRemStageOffset p 0 (i + 1) ≤ divRemStageOffset p 0 p :=
     divRemStageOffset_mono p 0 (Nat.succ_le_of_lt hi)
