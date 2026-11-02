@@ -238,12 +238,12 @@ theorem simulations_diverges_iff
       backwardSimulation_preservesStar backward hrel htargetRun
     have hsourceHalt : sourceStep sourceFinal = none :=
       (hterminal hfinalRel).2 htargetHalt
-    exact hsourceDiverges sourceFinal hsourceRun hsourceHalt
+    exact (hsourceDiverges sourceFinal hsourceRun) hsourceHalt
   · intro htargetDiverges sourceFinal hsourceRun hsourceHalt
     obtain ⟨targetFinal, htargetRun, hfinalRel⟩ :=
       forwardSimulation_preservesStar forward hrel hsourceRun
     have htargetHalt := terminal hfinalRel hsourceHalt
-    exact htargetDiverges targetFinal htargetRun htargetHalt
+    exact (htargetDiverges targetFinal htargetRun) htargetHalt
 
 
 /-- A finite run ending in a terminal state with a specified observable value. -/
