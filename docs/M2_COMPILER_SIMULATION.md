@@ -253,10 +253,13 @@ At the initial source configuration, the input tape is the unary word
 `d₁ ∈ {1,…,B−1}` be the fixed digit assigned to symbol `1`; its right-stack
 code is the explicit finite sum
 `ρ(n) = d₁ * (1 + B + … + B^(n−1))`, with `ρ(0)=0`.
-The left stack and scratch register are zero. Thus the target's M1 input is
-the explicit computable code
+The register assignment fixed above is `r0=T`, `r1=L`, and `r2=R`;
+therefore the left stack and scratch register are zero, while the right-stack
+code occupies the third prime exponent. The alphabet must have at least two
+symbols (`B≥2`) so blank digit zero and unary digit `d₁>0` are distinct.
+Thus the target's M1 input is the explicit computable code
 
-`inputCode(n) = primeCode(0, ρ, 0) = 3^ρ`.
+`inputCode(n) = primeCode(0, 0, ρ(n)) = 5^(ρ(n))`.
 
 The compiler theorem is therefore stated for the encoded target input, not
 incorrectly asserted for the same raw integer on both machines.
