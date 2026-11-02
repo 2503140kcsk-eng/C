@@ -80,9 +80,13 @@ theorem concreteMUL_replicate_step
         some (.inc .right) := by
     rw [concreteMUL_eq]
     rw [List.append_assoc]
-    rw [List.getElem?_append_right (by omega)]
-    have hidx : 7 + i - 7 = i := by omega
-    rw [hidx, List.getElem?_append_left hi]
+    rw [List.getElem?_append_right
+      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
+        .decJump .left destination, .inc .left, .inc .left,
+        .decJump .left 1]) (by simp)]
+    simp only [Nat.add_sub_cancel_left]
+    rw [List.getElem?_append_left
+      (l₁ := List.replicate factor (.inc .right)) hi]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -97,9 +101,13 @@ theorem concreteMUL_identity_first
         some (.inc .right) := by
     rw [concreteMUL_eq]
     rw [List.append_assoc]
-    rw [List.getElem?_append_right (by omega)]
-    have hidx : 7 + factor - 7 = factor := by omega
-    rw [hidx, List.getElem?_append_right (by omega)]
+    rw [List.getElem?_append_right
+      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
+        .decJump .left destination, .inc .left, .inc .left,
+        .decJump .left 1]) (by simp)]
+    simp only [Nat.add_sub_cancel_left]
+    rw [List.getElem?_append_right
+      (l₁ := List.replicate factor (.inc .right)) (by simp)]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -115,9 +123,14 @@ theorem concreteMUL_identity_second
         some (.decJump .right 0) := by
     rw [concreteMUL_eq]
     rw [List.append_assoc]
-    rw [List.getElem?_append_right (by omega)]
-    have hidx : 8 + factor - 7 = factor + 1 := by omega
-    rw [hidx, List.getElem?_append_right (by omega)]
+    rw [List.getElem?_append_right
+      (l₁ := [.decJump .left 7, .decJump .right 4, .inc .left,
+        .decJump .left destination, .inc .left, .inc .left,
+        .decJump .left 1]) (by simp)]
+    have hidx : 8 + factor = 7 + (factor + 1) := by omega
+    rw [hidx, Nat.add_sub_cancel_left]
+    rw [List.getElem?_append_right
+      (l₁ := List.replicate factor (.inc .right)) (by omega)]
     simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
