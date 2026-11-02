@@ -92,16 +92,14 @@ theorem concreteMUL_replicate_step
         [AssistantMachine.Instruction.inc .right,
          AssistantMachine.Instruction.decJump .right 0]))[7 + i]? =
         some (AssistantMachine.Instruction.inc .right)
-    have hprefixLength : mulPrefix.length = 7 := by simp [mulPrefix]
-    have hreplicateLength :
-        (List.replicate factor (AssistantMachine.Instruction.inc .right)).length =
-          factor := by simp
     rw [List.getElem?_append_right (l₁ := mulPrefix) (i := 7 + i)
-      (by rw [hprefixLength]; omega)]
-    rw [show 7 + i - mulPrefix.length = i by rw [hprefixLength]; omega]
+      (by change 7 ≤ 7 + i; omega)]
+    rw [show 7 + i - mulPrefix.length = i by
+      change 7 + i - 7 = i
+      omega]
     rw [List.getElem?_append_left
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
-      (i := i) (by rw [hreplicateLength]; exact hi)]
+      (i := i) (by simpa using hi)]
     exact List.getElem?_replicate_of_lt hi
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -128,19 +126,15 @@ theorem concreteMUL_identity_first
         [AssistantMachine.Instruction.inc .right,
          AssistantMachine.Instruction.decJump .right 0]))[7 + factor]? =
         some (AssistantMachine.Instruction.inc .right)
-    have hprefixLength : mulPrefix.length = 7 := by simp [mulPrefix]
-    have hreplicateLength :
-        (List.replicate factor (AssistantMachine.Instruction.inc .right)).length =
-          factor := by simp
     rw [List.getElem?_append_right (l₁ := mulPrefix) (i := 7 + factor)
-      (by rw [hprefixLength]; omega)]
+      (by change 7 ≤ 7 + factor; omega)]
     rw [show 7 + factor - mulPrefix.length = factor by
-      rw [hprefixLength]; omega]
+      change 7 + factor - 7 = factor
+      omega]
     rw [List.getElem?_append_right
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
-      (i := factor) (by rw [hreplicateLength])]
-    rw [hreplicateLength, Nat.sub_self]
-    rfl
+      (i := factor) (by simp)]
+    simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
   omega
@@ -167,21 +161,15 @@ theorem concreteMUL_identity_second
         [AssistantMachine.Instruction.inc .right,
          AssistantMachine.Instruction.decJump .right 0]))[8 + factor]? =
         some (AssistantMachine.Instruction.decJump .right 0)
-    have hprefixLength : mulPrefix.length = 7 := by simp [mulPrefix]
-    have hreplicateLength :
-        (List.replicate factor (AssistantMachine.Instruction.inc .right)).length =
-          factor := by simp
     rw [List.getElem?_append_right (l₁ := mulPrefix) (i := 8 + factor)
-      (by rw [hprefixLength]; omega)]
+      (by change 7 ≤ 8 + factor; omega)]
     rw [show 8 + factor - mulPrefix.length = factor + 1 by
-      rw [hprefixLength]; omega]
+      change 8 + factor - 7 = factor + 1
+      omega]
     rw [List.getElem?_append_right
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
-      (i := factor + 1) (by rw [hreplicateLength]; omega)]
-    rw [show factor + 1 -
-      (List.replicate factor (AssistantMachine.Instruction.inc .right)).length = 1 by
-        rw [hreplicateLength]; omega]
-    rfl
+      (i := factor + 1) (by simp)]
+    simp
   simp [AssistantMachine.step, hget, AssistantMachine.readCounter,
     AssistantMachine.writeCounter, AssistantMachine.setPC]
 
