@@ -204,5 +204,122 @@ theorem tr_loop_variant_decreases (b : Nat) (h : 0 < b) :
     b - 1 < b := by
   omega
 
+
+/-!
+## DIVREM: quotient/remainder phase semantics
+
+The concrete instruction generator in LowLevelMacros.lean removes groups of p
+units from A, increments B once per group, then scans the final residue in
+finite control.  If the residue is zero it transfers B to A with TR(1,0);
+otherwise it restores the original value with TR(p,r).  The definitions below
+formalize each loop-header invariant and the combined result.
+-/
+
+/-- After k complete groups, A = input-p*k and B = k. -/
+def divRemGroupState (p input k : Nat) : CounterPair :=
+  (input - p * k, k)
+
+/-- One complete quotient-group iteration consumes p from A and increments B. -/
+def divRemGroupRound (s : CounterPair) (p : Nat) : CounterPair :=
+  (s.1 - p, s.2 + 1)
+
+/--
+The group-loop invariant is preserved whenever another complete group fits
+inside the remaining data counter.
+-/
+theorem divRem_group_loop_invariant_step {p input k : Nat}
+    (hfit : p * (k + 1) ≤ input) :
+    divRemGroupState p input (k + 1) =
+      divRemGroupRound (divRemGroupState p input k) p := by
+  simp [divRemGroupState, divRemGroupRound, Nat.mul_succ]
+  omega
+
+@[simp] theorem divRem_group_loop_initial (p input : Nat) :
+    divRemGroupState p input 0 = (input, 0) := by
+  simp [divRemGroupState]
+
+/-- The group loop exits with the Euclidean remainder in A and quotient in B. -/
+theorem divRem_group_loop_exit (p input : Nat) :
+    divRemGroupState p input (input / p) = (input % p, input / p) := by
+  have h := Nat.mod_add_div input p
+  simp [divRemGroupState]
+  omega
+
+/-- The remainder left at the end of the group loop is smaller than p. -/
+theorem divRem_group_remainder_bound {p input : Nat} (hp : 0 < p) :
+    input % p < p :=
+  Nat.mod_lt input hp
+
+/-- A successful group iteration strictly decreases A for every p>0. -/
+theorem divRem_group_variant_decreases {p a : Nat}
+    (hp : 0 < p) (hfit : p ≤ a) :
+    a - p < a := by
+  omega
+
+/-- After j positive residue tests, A = remainder-j and B remains quotient. -/
+def divRemResidueState (remainder quotient j : Nat) : CounterPair :=
+  (remainder - j, quotient)
+
+/-- A positive residue test decrements A once and leaves B untouched. -/
+def divRemResidueRound (s : CounterPair) : CounterPair :=
+  (s.1 - 1, s.2)
+
+/-- The residue-scan invariant is preserved while the current test is positive. -/
+theorem divRem_residue_loop_invariant_step {remainder quotient j : Nat}
+    (hpositive : j < remainder) :
+    divRemResidueState remainder quotient (j + 1) =
+      divRemResidueRound (divRemResidueState remainder quotient j) := by
+  simp [divRemResidueState, divRemResidueRound]
+  omega
+
+@[simp] theorem divRem_residue_loop_initial (remainder quotient : Nat) :
+    divRemResidueState remainder quotient 0 = (remainder, quotient) := by
+  simp [divRemResidueState]
+
+@[simp] theorem divRem_residue_loop_exit (remainder quotient : Nat) :
+    divRemResidueState remainder quotient remainder = (0, quotient) := by
+  simp [divRemResidueState]
+
+/-- Each positive residue-test back-edge strictly decreases A. -/
+theorem divRem_residue_variant_decreases (a : Nat)
+    (hpositive : 0 < a) : a - 1 < a := by
+  omega
+
+/-- The final TR handler selected by the finite-control remainder test. -/
+def divRemHandler (p remainder quotient : Nat) : CounterPair :=
+  if remainder = 0 then TR 1 0 quotient else TR p remainder quotient
+
+/--
+If the residue is zero, the handler returns the quotient.  Otherwise it
+reconstructs p*quotient+remainder, i.e. the original input.
+-/
+theorem divRem_handler_correct (p remainder quotient : Nat) :
+    divRemHandler p remainder quotient =
+      if remainder = 0 then (quotient, 0)
+      else (p * quotient + remainder, 0) := by
+  by_cases hr : remainder = 0
+  · simp [divRemHandler, hr, TR_correct]
+  · simp [divRemHandler, hr, TR_correct]
+
+/--
+Macro-level semantics of the whole quotient/remainder zero-test block.
+Its precondition is p>0; the result is the quotient exactly when the
+remainder vanishes, and otherwise the original input is restored.
+-/
+def DIVREM (p input : Nat) : CounterPair :=
+  divRemHandler p (input % p) (input / p)
+
+/-- Kernel-checked correctness of the abstract DIVREM macro. -/
+theorem DIVREM_correct {p input : Nat} (hp : 0 < p) :
+    DIVREM p input =
+      if input % p = 0 then (input / p, 0) else (input, 0) := by
+  unfold DIVREM
+  by_cases hr : input % p = 0
+  · simp [divRemHandler, hr, TR_correct]
+  · have hdiv := Nat.mod_add_div input p
+    simp [divRemHandler, hr, TR_correct]
+    omega
+
+
 end Compiler
 end HakuiKoyori
