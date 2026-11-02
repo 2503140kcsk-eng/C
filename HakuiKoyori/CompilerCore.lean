@@ -4,6 +4,8 @@ public import HakuiKoyori.AssistantMachine
 public import Mathlib.Data.Nat.Prime.Basic
 public import Mathlib.Tactic.Ring
 
+public section
+
 /-!
 # Compiler foundations (M2)
 
