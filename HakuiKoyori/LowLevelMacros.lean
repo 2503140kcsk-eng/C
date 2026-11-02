@@ -172,10 +172,17 @@ def enumerateBlocks {α : Type u} : List α → Nat → List (Nat × α)
   | [], _ => []
   | x :: xs, n => (n, x) :: enumerateBlocks xs (n + 1)
 
+/-- Recursive prefix sum of lengths of the first source blocks. -/
+@[expose]
+def prefixLength : List TemplateBlock → Nat → Nat
+  | [], _ => 0
+  | _ :: _, 0 => 0
+  | block :: rest, pc + 1 => block.length + prefixLength rest pc
+
 /-- The global start address of source block pc. -/
 @[expose]
 def blockStart (blocks : List TemplateBlock) (pc : Nat) : Nat :=
-  ((blocks.take pc).map List.length).sum
+  prefixLength blocks pc
 
 /-- The complete length of a flattened block list. -/
 @[expose]
@@ -278,28 +285,16 @@ theorem rebaseBlock_comp (outer inner : Nat) (block : TemplateBlock) :
   induction block with
   | nil => rfl
   | cons instruction rest ih =>
-      simp only [rebaseBlock, List.map_cons]
+      change
+        rebaseInstruction outer (rebaseInstruction inner instruction) ::
+          rebaseBlock outer (rebaseBlock inner rest) =
+        rebaseInstruction (outer + inner) instruction ::
+          rebaseBlock (outer + inner) rest
       rw [rebaseInstruction_comp, ih]
-
-/-- Prefix length of the first pc source blocks. -/
-@[expose]
-def prefixLength : List TemplateBlock → Nat → Nat
-  | [], _ => 0
-  | _ :: _, 0 => 0
-  | block :: rest, pc + 1 => block.length + prefixLength rest pc
 
 /-- The implementation's blockStart is exactly the recursive prefix sum. -/
 theorem blockStart_eq_prefixLength (blocks : List TemplateBlock) (pc : Nat) :
-    blockStart blocks pc = prefixLength blocks pc := by
-  induction blocks generalizing pc with
-  | nil =>
-      simp [blockStart, prefixLength]
-  | cons block rest ih =>
-      cases pc with
-      | zero =>
-          simp [blockStart, prefixLength]
-      | succ pc =>
-          simp [blockStart, prefixLength, ih]
+    blockStart blocks pc = prefixLength blocks pc := rfl
 
 /-- Source block starts are nondecreasing, even when some blocks are empty. -/
 theorem prefixLength_mono (blocks : List TemplateBlock) {i j : Nat}
