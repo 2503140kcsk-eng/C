@@ -382,40 +382,74 @@ The source TM is deterministic, one-tape, and has a finite alphabet
 \`Γ\` containing blank \`□\` and a distinguished unary symbol \`1\`.
 The blank digit is zero; the unary digit \`d₁=d(1)\` is nonzero.
 
-The target's initial input code stores the entire unary word in the right
-stack, including the head cell. Define
+The input configuration must follow the explicit-current convention
+from Section 5. In particular, the head cell is **not** included in
+the right stack. Normalize the finite alphabet so that blank has digit
+`0` and the distinguished unary symbol has digit `1`; this is a
+finite relabelling requirement on the source machine.
 
-\`\`\`text
-ρ(n) = d₁ * (1 + β + ... + β^(n-1)),  ρ(0)=0
-\`\`\`
+Define the code for a stack of exactly `k` unary symbols by
 
-and start with virtual registers \`(T,L,R)=(0,0,ρ(n))\`. The compiler entry
-block executes \`POP(R;T)\` to move the first symbol into finite control.
-For \`n=0\`, it returns blank and leaves \`R=0\`; for \`n>0\`, it returns
-\`1\` and leaves the remaining \`n-1\` symbols in \`R\`. Thus the exact
-M1 input code for the Stage B register representation is
+```text
+Uβ(0)   = 0
+Uβ(k+1) = 1 + β * Uβ(k)
+```
 
-\`\`\`text
-inputCode(n) = primeCode(0,0,ρ(n)) = 5^(ρ(n))
-\`\`\`
+For the source input `1^n`, the intended typed TM configuration is
 
-The bootstrap must be present in the generated finite program: the M1
-initial program counter cannot itself depend on the input's first symbol.
-After the bootstrap, the finite-control label is \`(q₀,current)\`, and the
-two stack registers represent only the cells strictly to either side of
-the head.
+```text
+n = 0: (state, leftStack, current, rightStack)
+      = (q₀, 0, blank, 0)
 
-A halting TM is required to leave the unary result \`1^v\` beginning at
+n > 0: (state, leftStack, current, rightStack)
+      = (q₀, 0, 1, Uβ(n-1))
+```
+
+This is the input configuration used in the TM-step simulation. The
+numeric M1 input must additionally encode the current symbol because the
+M1 program counter is fixed and cannot depend on `n`. Use the virtual
+register tuple `(T,L,R)` at the *bootstrap entry*:
+
+```text
+n = 0: (T,L,R) = (0,0,0)
+n > 0: (T,L,R) = (1,0,Uβ(n-1))
+```
+
+The fixed bootstrap instruction is `decJump T, label(q₀,1)`; its
+zero branch falls through to `label(q₀,blank)`. For `n=0`, `T=0`
+and the zero branch leaves all registers unchanged. For `n>0`, `T=1`,
+so the positive branch decrements it to zero and jumps to
+`label(q₀,1)`. Thus in both cases, after this one initialization
+instruction, `T=0`, and the finite-control label records the explicit
+current symbol while `R` contains only the cells strictly to the right.
+No `POP(R;T)` is used to read the current cell.
+
+Consequently the input codec for the two-counter M1 machine is
+
+```text
+inputCode(0)   = primeCode(0,0,0) = 1
+inputCode(n+1) = primeCode(1,0,Uβ(n)) = 2 * 5^(Uβ(n))
+```
+
+The bootstrap is a separate verified initialization macro, not a
+simulated TM transition. The forward simulation relation starts only
+after it reaches `label(q₀,current)` with `T=0`. This distinction is
+required for a correct composition theorem and must be represented in
+the Lean input encoder and initialization lemma.
+
+A halting TM is required to leave the unary result `1^v` beginning at
 the current head cell and followed immediately by blank. The cleanup block
-first inspects the current symbol stored in finite control: it increments
-\`T\` once if the current symbol is \`1\`, and zero times if it is blank.
-A different nonblank current symbol violates the output precondition.
-It then scans \`R\` using \`L\` as scratch, preserving \`T\`: each popped
-\`1\` increments \`T\`; the first blank ends the scan; any other symbol
-before that blank violates the output precondition. Finally, it clears
-\`L\` and \`R\` by loops that decrement each register to zero; these clearing
-loops need no scratch register, so \`T\` remains equal to \`v\`. The final
-virtual register tuple is \`(T,L,R)=(v,0,0)\`.
+first clears `L`, since the original left stack is no longer needed and
+`L` will be the scratch register for POP. It then inspects the current
+symbol stored in finite control: it increments `T` once if the current
+symbol is `1`, and zero times if it is blank. A different nonblank
+current symbol violates the output precondition. It scans `R` using
+`L` as scratch, preserving `T`: each popped `1` increments `T`;
+the first blank ends the scan; any other symbol before that blank violates
+the output precondition. The scan stops at the first blank and need not
+inspect the tape beyond it. Finally, it clears `R` with a self-decrement
+loop; this does not change `T`. The final virtual register tuple is
+`(T,L,R)=(v,0,0)`.
 
 Stage B therefore emits the exact target output code
 \`primeCode(v,0,0)=2^v\`. The verified compiler contract uses the explicit
