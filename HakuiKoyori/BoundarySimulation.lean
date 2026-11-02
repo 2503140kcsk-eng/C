@@ -62,25 +62,19 @@ theorem primeCode_write3_dec_div (regs : Registers3) (which : Register3)
         (c := regs.r2) (by simpa [read3] using hpositive)
       change primeCode (regs.r0 - 1) regs.r1 regs.r2 =
         primeCode regs.r0 regs.r1 regs.r2 / 2
-      rw [hdec, Nat.mul_div_left]
-      · rfl
-      · decide
+      rw [hdec, Nat.mul_div_right _ (by decide : 0 < 2)]
   | r1 =>
       have hdec := primeCode_dec_r1 (a := regs.r0) (b := regs.r1)
         (c := regs.r2) (by simpa [read3] using hpositive)
       change primeCode regs.r0 (regs.r1 - 1) regs.r2 =
         primeCode regs.r0 regs.r1 regs.r2 / 3
-      rw [hdec, Nat.mul_div_left]
-      · rfl
-      · decide
+      rw [hdec, Nat.mul_div_right _ (by decide : 0 < 2)]
   | r2 =>
       have hdec := primeCode_dec_r2 (a := regs.r0) (b := regs.r1)
         (c := regs.r2) (by simpa [read3] using hpositive)
       change primeCode regs.r0 regs.r1 (regs.r2 - 1) =
         primeCode regs.r0 regs.r1 regs.r2 / 5
-      rw [hdec, Nat.mul_div_left]
-      · rfl
-      · decide
+      rw [hdec, Nat.mul_div_right _ (by decide : 0 < 2)]
 
 /--
 The DIVREM block's divisibility branch is exactly the source register's
