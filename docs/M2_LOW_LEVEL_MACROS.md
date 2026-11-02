@@ -41,6 +41,13 @@ marked `SRC(q)`, which denotes the entry label of source instruction (q).
 A repetition such as `inc B × p` means exactly (p) consecutive primitive
 `inc B` instructions, not a new ISA instruction.
 
+When a block is nested at local offset o, every internal jump target
+Local(k) is rebased to Local(o+k); an external Source(q) target is left
+unchanged. Apply this rebasing before concatenation. In particular, the
+internal back-edge of every embedded TR handler must be shifted by that
+handler's starting offset; otherwise it jumps into the wrong enclosing block.
+
+
 ## 2. Multiply-by-a-fixed-constant block
 
 For any fixed (p\ge 1), define `MUL(p, D)` with precondition
@@ -234,27 +241,33 @@ A well-formed nonempty stack therefore has remainder (d(s)\ne0) modulo
 (\beta), and its quotient is the code of its tail. The empty stack is
 zero and represents an unvisited infinite blank suffix.
 
-Use three **virtual** registers: (L) (left stack), (R) (right stack,
-whose top is the current cell), and (T) (scratch, zero at every
-Turing-step boundary). Reuse the same two-counter-shaped blocks above
-inside the three-register ISA, choosing (X\in\{L,R\}) as data and
-(T) as scratch:
+Use three **virtual** registers: L (left stack), R (right stack, whose top is
+the current cell), and T (scratch, zero at every Turing-step boundary). A
+stack macro uses a pair (X,S) of distinct registers, with X as data and S
+as scratch; the remaining register is untouched. Ordinary TM steps use
+S=T. Final output cleanup clears L first, then uses (X,S)=(R,L), leaving
+T available as the unary-output accumulator.
 
-- `PUSH(X,d(s))`: `MUL(β)` on ((X,T)), then execute `inc X`
-  exactly (d(s)) times. It maps (X) to (\beta X+d(s)) and restores
-  (T=0).
-- `POP(X)`: run the grouping tests for divisor (\beta). For each
-  remainder (j\in\{0,\ldots,\beta-1\}), the handler transfers
-  (\lfloor X_{old}/\beta\rfloor) from (T) back to (X) and jumps
-  to the finite-control continuation for (j). It returns
-  ((X_{old}/\beta, X_{old}\bmod\beta)), with (T=0).
-  Remainder zero is the empty-stack case and returns blank; for a
-  well-formed nonempty stack, the remainder is exactly (d(s)).
+- `PUSH(X,d(s))`: execute the MUL(β) pattern from Section 2 on (X,S),
+  then execute `inc X` exactly d(s) times. This maps X to β*X_old+d(s)
+  and restores S=0.
+- `POP(X)`: lay out tests `L_j: decJump X,L_(j+1)` for
+  j=0,...,β-1, with L_β the group-loop header. Immediately after each
+  test put the handler `TR(1,0,D_j)` from Section 3, with all its
+  internal labels rebased to that handler's offset. If the test sees zero,
+  it falls through to its handler; if positive, it decrements X and jumps
+  to the next test. At the group header execute `inc S; J_S(L_0)`.
+  Starting from (X,S)=(N,0), after k full groups the invariant is
+  X=N-βk and S=k. The first failed test is j=N mod β, at which point
+  X=0 and S=floor(N/β). Its handler TR(1,0,D_j) transfers only the
+  quotient back to X, then branches to continuation D_j.
+  Therefore it returns (X,S)=(floor(N/β),0), with remainder j
+  held in finite control. For a well-formed nonempty stack j=d(s)≠0;
+  for the empty stack j=0 and the returned symbol is blank.
 
-The POP handler deliberately transfers the quotient for **every** remainder.
-It does not use the non-destructive `DIVREM` zero-test handler, whose
-nonzero branch restores the original number.
-
+The POP handler transfers the quotient for **every** remainder. It is not
+DIVREM from Section 3: that block restores the original data when the
+remainder is nonzero, whereas POP must always replace the stack by its tail.
 For a TM transition ((q,s)\mapsto(q',w,move)), first POP (R) to read
 the current symbol (s); the returned remainder selects the finite
 continuation:
