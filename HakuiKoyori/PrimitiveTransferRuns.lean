@@ -26,11 +26,11 @@ def concreteTR (m r destination : Nat) : Program :=
 /-- The materialized program is exactly the documented primitive list. -/
 theorem concreteTR_eq (m r destination : Nat) :
     concreteTR m r destination =
-      [.decJump .right (3 + r)] ++
-        (List.replicate r (.inc .left) ++
-          ([.inc .left, .decJump .left destination] ++
-            (List.replicate m (.inc .left) ++
-              [.inc .left, .decJump .left 0])) ) := by
+      [Instruction.decJump Counter.right (3 + r)] ++
+        (List.replicate r (Instruction.inc Counter.left) ++
+          ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+            (List.replicate m (Instruction.inc Counter.left) ++
+              [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])) ) := by
   simp [concreteTR, transferBlock, identityJump,
     relocateInstruction, resolveTarget, List.append_assoc]
 
@@ -38,14 +38,14 @@ theorem concreteTR_eq (m r destination : Nat) :
 theorem runN_incLeft_segment
     (program : Program) (base count a b : Nat)
     (hget : ∀ i, i < count →
-      program[base + i]? = some (.inc .left)) :
+      program[base + i]? = some (Instruction.inc Counter.left)) :
     runN count program ⟨base, a, b⟩ =
       some ⟨base + count, a + count, b⟩ := by
   induction count generalizing base a with
   | zero =>
       simp [runN]
   | succ count ih =>
-      have hfirst : program[base]? = some (.inc .left) := by
+      have hfirst : program[base]? = some (Instruction.inc Counter.left) := by
         simpa using hget 0 (by omega)
       have hstep :
           AssistantMachine.step program ⟨base, a, b⟩ =
@@ -56,7 +56,7 @@ theorem runN_incLeft_segment
       simp only [runN]
       rw [hstep]
       have htail : ∀ i, i < count →
-          program[(base + 1) + i]? = some (.inc .left) := by
+          program[(base + 1) + i]? = some (Instruction.inc Counter.left) := by
         intro i hi
         have h := hget (i + 1) (by omega)
         have hindex : (base + 1) + i = base + (i + 1) := by omega
@@ -68,9 +68,9 @@ theorem runN_incLeft_segment
 /-- Execute the two-instruction identity jump on the left counter. -/
 theorem runN_identityJumpLeft
     (program : Program) (base destination a b : Nat)
-    (hfirst : program[base]? = some (.inc .left))
+    (hfirst : program[base]? = some (Instruction.inc Counter.left))
     (hsecond : program[base + 1]? =
-      some (.decJump .left destination)) :
+      some (Instruction.decJump Counter.left destination)) :
     runN 2 program ⟨base, a, b⟩ =
       some ⟨destination, a, b⟩ := by
   simp [runN, AssistantMachine.step, hfirst, hsecond,
@@ -99,32 +99,32 @@ theorem concreteTR_zero_entry
 theorem concreteTR_remainder_get
     (m r destination i : Nat) (hi : i < r) :
     (concreteTR m r destination)[1 + i]? =
-      some (.inc .left) := by
-  let prefixR : Program := [.decJump .right (3 + r)]
+      some (Instruction.inc Counter.left) := by
+  let prefixR : Program := [Instruction.decJump Counter.right (3 + r)]
   have hshape :
       concreteTR m r destination =
         prefixR ++
-          (List.replicate r (.inc .left) ++
-            ([.inc .left, .decJump .left destination] ++
-              (List.replicate m (.inc .left) ++
-                [.inc .left, .decJump .left 0]))) := by
+          (List.replicate r (Instruction.inc Counter.left) ++
+            ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+              (List.replicate m (Instruction.inc Counter.left) ++
+                [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]))) := by
     simp [concreteTR, prefixR, transferBlock,
       identityJump, relocateInstruction, resolveTarget]
   have hlength : prefixR.length = 1 := by simp [prefixR]
   have hreplicateLength :
-      (List.replicate r (.inc .left)).length = r := by simp
+      (List.replicate r (Instruction.inc Counter.left)).length = r := by simp
   rw [hshape]
   change (prefixR ++
-    (List.replicate r (.inc .left) ++
-      ([.inc .left, .decJump .left destination] ++
-        (List.replicate m (.inc .left) ++
-          [.inc .left, .decJump .left 0]))))[1 + i]? =
-      some (.inc .left)
+    (List.replicate r (Instruction.inc Counter.left) ++
+      ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+        (List.replicate m (Instruction.inc Counter.left) ++
+          [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]))))[1 + i]? =
+      some (Instruction.inc Counter.left)
   rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + i)
     (by rw [hlength]; omega)]
   rw [show 1 + i - prefixR.length = i by rw [hlength]; omega]
   rw [List.getElem?_append_left
-    (l₁ := List.replicate r (.inc .left)) (i := i)
+    (l₁ := List.replicate r (Instruction.inc Counter.left)) (i := i)
     (by rw [hreplicateLength]; exact hi)]
   exact List.getElem?_replicate_of_lt hi
 
@@ -132,16 +132,16 @@ theorem concreteTR_remainder_get
 theorem concreteTR_transfer_get
     (m r destination i : Nat) (hi : i < m) :
     (concreteTR m r destination)[3 + r + i]? =
-      some (.inc .left) := by
+      some (Instruction.inc Counter.left) := by
   let prefixM : Program :=
-    [.decJump .right (3 + r)] ++
-      (List.replicate r (.inc .left) ++
-        [.inc .left, .decJump .left destination])
+    [Instruction.decJump Counter.right (3 + r)] ++
+      (List.replicate r (Instruction.inc Counter.left) ++
+        [Instruction.inc Counter.left, Instruction.decJump Counter.left destination])
   have hshape :
       concreteTR m r destination =
         prefixM ++
-          (List.replicate m (.inc .left) ++
-            [.inc .left, .decJump .left 0]) := by
+          (List.replicate m (Instruction.inc Counter.left) ++
+            [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]) := by
     simp [concreteTR, prefixM, transferBlock,
       identityJump, relocateInstruction, resolveTarget]
   have hlength : prefixM.length = 3 + r := by
@@ -149,34 +149,34 @@ theorem concreteTR_transfer_get
       List.length_nil, List.length_replicate]
     omega
   have hreplicateLength :
-      (List.replicate m (.inc .left)).length = m := by simp
+      (List.replicate m (Instruction.inc Counter.left)).length = m := by simp
   rw [hshape]
   change (prefixM ++
-    (List.replicate m (.inc .left) ++
-      [.inc .left, .decJump .left 0]))[3 + r + i]? =
-      some (.inc .left)
+    (List.replicate m (Instruction.inc Counter.left) ++
+      [Instruction.inc Counter.left, Instruction.decJump Counter.left 0]))[3 + r + i]? =
+      some (Instruction.inc Counter.left)
   rw [List.getElem?_append_right (l₁ := prefixM) (i := 3 + r + i)
     (by rw [hlength]; omega)]
   rw [show 3 + r + i - prefixM.length = i by rw [hlength]; omega]
   rw [List.getElem?_append_left
-    (l₁ := List.replicate m (.inc .left)) (i := i)
+    (l₁ := List.replicate m (Instruction.inc Counter.left)) (i := i)
     (by rw [hreplicateLength]; exact hi)]
   exact List.getElem?_replicate_of_lt hi
 
 /-- The remainder identity jump starts immediately after the r increments. -/
 theorem concreteTR_remainder_jump_get
     (m r destination : Nat) :
-    (concreteTR m r destination)[1 + r]? = some (.inc .left) ∧
+    (concreteTR m r destination)[1 + r]? = some (Instruction.inc Counter.left) ∧
     (concreteTR m r destination)[1 + r + 1]? =
-      some (.decJump .left destination) := by
+      some (Instruction.decJump Counter.left destination) := by
   let prefixR : Program :=
-    [.decJump .right (3 + r)] ++ List.replicate r (.inc .left)
+    [Instruction.decJump Counter.right (3 + r)] ++ List.replicate r (Instruction.inc Counter.left)
   have hshape :
       concreteTR m r destination =
         prefixR ++
-          ([.inc .left, .decJump .left destination] ++
-            (List.replicate m (.inc .left) ++
-              [.inc .left, .decJump .left 0])) := by
+          ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+            (List.replicate m (Instruction.inc Counter.left) ++
+              [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])) := by
     simp [concreteTR, prefixR, transferBlock,
       identityJump, relocateInstruction, resolveTarget]
   have hlength : prefixR.length = 1 + r := by
@@ -184,20 +184,20 @@ theorem concreteTR_remainder_jump_get
   constructor
   · rw [hshape]
     change (prefixR ++
-      ([.inc .left, .decJump .left destination] ++
-        (List.replicate m (.inc .left) ++
-          [.inc .left, .decJump .left 0])))[1 + r]? =
-        some (.inc .left)
+      ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+        (List.replicate m (Instruction.inc Counter.left) ++
+          [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])))[1 + r]? =
+        some (Instruction.inc Counter.left)
     rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r)
       (by rw [hlength]; omega)]
     rw [show 1 + r - prefixR.length = 0 by rw [hlength]; omega]
     rfl
   · rw [hshape]
     change (prefixR ++
-      ([.inc .left, .decJump .left destination] ++
-        (List.replicate m (.inc .left) ++
-          [.inc .left, .decJump .left 0])))[1 + r + 1]? =
-        some (.decJump .left destination)
+      ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+        (List.replicate m (Instruction.inc Counter.left) ++
+          [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])))[1 + r + 1]? =
+        some (Instruction.decJump Counter.left destination)
     rw [List.getElem?_append_right (l₁ := prefixR) (i := 1 + r + 1)
       (by rw [hlength]; omega)]
     rw [show 1 + r + 1 - prefixR.length = 1 by rw [hlength]; omega]
@@ -207,17 +207,17 @@ theorem concreteTR_remainder_jump_get
 theorem concreteTR_final_jump_get
     (m r destination : Nat) :
     (concreteTR m r destination)[3 + r + m]? =
-      some (.inc .left) ∧
+      some (Instruction.inc Counter.left) ∧
     (concreteTR m r destination)[3 + r + m + 1]? =
-      some (.decJump .left 0) := by
+      some (Instruction.decJump Counter.left 0) := by
   let prefixEnd : Program :=
-    [.decJump .right (3 + r)] ++
-      (List.replicate r (.inc .left) ++
-        ([.inc .left, .decJump .left destination] ++
-          List.replicate m (.inc .left)))
+    [Instruction.decJump Counter.right (3 + r)] ++
+      (List.replicate r (Instruction.inc Counter.left) ++
+        ([Instruction.inc Counter.left, Instruction.decJump Counter.left destination] ++
+          List.replicate m (Instruction.inc Counter.left)))
   have hshape :
       concreteTR m r destination =
-        prefixEnd ++ [.inc .left, .decJump .left 0] := by
+        prefixEnd ++ [Instruction.inc Counter.left, Instruction.decJump Counter.left 0] := by
     simp [concreteTR, prefixEnd, transferBlock,
       identityJump, relocateInstruction, resolveTarget]
   have hlength : prefixEnd.length = 3 + r + m := by
@@ -225,15 +225,15 @@ theorem concreteTR_final_jump_get
       List.length_nil, List.length_replicate] <;> omega
   constructor
   · rw [hshape]
-    change (prefixEnd ++ [.inc .left, .decJump .left 0])
-      [3 + r + m]? = some (.inc .left)
+    change (prefixEnd ++ [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
+      [3 + r + m]? = some (Instruction.inc Counter.left)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
       (i := 3 + r + m) (by rw [hlength]; omega)]
     rw [show 3 + r + m - prefixEnd.length = 0 by rw [hlength]; omega]
     rfl
   · rw [hshape]
-    change (prefixEnd ++ [.inc .left, .decJump .left 0])
-      [3 + r + m + 1]? = some (.decJump .left 0)
+    change (prefixEnd ++ [Instruction.inc Counter.left, Instruction.decJump Counter.left 0])
+      [3 + r + m + 1]? = some (Instruction.decJump Counter.left 0)
     rw [List.getElem?_append_right (l₁ := prefixEnd)
       (i := 3 + r + m + 1) (by rw [hlength]; omega)]
     rw [show 3 + r + m + 1 - prefixEnd.length = 1 by rw [hlength]; omega]
