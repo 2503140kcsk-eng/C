@@ -164,10 +164,10 @@ Then prove, in order:
 - compile3_step_simulation: every three-register step is matched by a
   nonempty finite two-counter run;
 - compile3_halts_iff: halting is preserved in both directions;
-- compile3_output_eq: the designated natural-number result is unchanged;
+- compile3_output_codec: the designated natural-number result is represented by the explicit target codec;
 - compileTM_step_simulation: the composed TM-to-three-register-to-two-
   counter compiler simulates each TM step;
-- compileTM_halts_iff and compileTM_output_eq;
+- compileTM_halts_iff and compileTM_output_codec;
 - divergence preservation from the progress measure and determinism.
 
 Only after the final two theorems pass the pinned Lean kernel and the
@@ -195,16 +195,20 @@ incorrectly asserted for the same raw integer on both machines.
 
 A halting source machine is required to leave its natural-number result as a
 unary block `1^v` beginning at the head, followed by blank. The Stage-A
-three-register cleanup macro scans that block, increments virtual register
-`r0` once per unary symbol, and returns with the arithmetic scratch register
-zero. The Stage-B target output macro then repeatedly divides the prime code
-by 2 while it is even, incrementing the physical right counter once per exact
-division. By `two_dvd_primeCode_iff`, the number of such divisions is exactly
-the exponent of 2, namely the value in `r0`. It then clears the residual odd
-cofactor from the physical left counter and transfers the right counter to
-the left. This is intended to leave target output `v` in the M1 left
-counter and right counter zero. The macro and its termination/output theorem
-are still unimplemented.
+three-register cleanup macro first clears the left stack, scans the leading
+unary block, increments virtual register `r0` once per unary symbol, and
+then clears both stack registers. It leaves `(r0,r1,r2)=(v,0,0)` and scratch
+zero. The Stage-B boundary encoding is therefore exactly
+`primeCode(v,0,0)=2^v` in the M1 left counter, with the right counter zero.
+The output representation is `OutputCode(v)=2^v`; its decoder relation is
+`OutputRep(v,z) iff z=2^v`, which uniquely recovers `v`.
+
+**Important correction:** the earlier proposal to repeatedly divide by 2
+while simultaneously accumulating the number of divisions in the second
+physical counter is not a proved two-counter macro: that counter is also
+needed as the quotient/remainder work register. No raw-output conversion
+`2^v -> v` is claimed. A raw-counter normalizer would be a separate program
+and theorem. See [M2_LOW_LEVEL_MACROS.md](M2_LOW_LEVEL_MACROS.md), Section 6.
 
 The intended final theorem has the shape
 
