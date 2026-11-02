@@ -127,6 +127,24 @@ theorem firstStep {α : Type u} {step : α → Option α} {a b : α}
 
 end StepPlus
 
+/-- Extend forward simulation to reflexive-transitive source runs. -/
+theorem forwardSimulation_preservesStar
+    {S : Type u} {T : Type v}
+    {sourceStep : S → Option S} {targetStep : T → Option T}
+    {rel : S → T → Prop}
+    (sim : ForwardSimulation sourceStep targetStep rel) :
+    ∀ ⦃s s' t⦄, rel s t → StepStar sourceStep s s' →
+      ∃ t', StepStar targetStep t t' ∧ rel s' t' := by
+  intro s s' t hrel hrun
+  induction hrun generalizing t with
+  | refl =>
+      exact ⟨t, StepStar.refl t, hrel⟩
+  | tail hprefix hstep ih =>
+      obtain ⟨t₁, htarget₁, hrel₁⟩ := ih hrel
+      obtain ⟨t₂, htarget₂, hrel₂⟩ := sim hrel₁ hstep
+      exact ⟨t₂, StepStar.trans htarget₁ (StepPlus.toStar htarget₂), hrel₂⟩
+
+
 /--
 Backward simulation: each target transition is matched by a possibly empty
 finite source run and preserves the relation. Empty source progress accounts
@@ -148,7 +166,7 @@ theorem backwardSimulation_preservesStar
       ∃ s', StepStar sourceStep s s' ∧ rel s' t' := by
   intro s t t' hrel hrun
   induction hrun generalizing s with
-  | refl t =>
+  | refl =>
       exact ⟨s, StepStar.refl s, hrel⟩
   | tail hprefix hstep ih =>
       obtain ⟨s₁, hsource₁, hrel₁⟩ := ih hrel
@@ -177,13 +195,13 @@ theorem forwardSimulation_terminal_iff
   constructor
   · exact terminal hrel
   · intro ht
-    by_contra hs
     cases hsource : sourceStep s with
-    | none => exact hs hsource
+    | none => exact hsource
     | some s' =>
         obtain ⟨t', hrun, hrel'⟩ := sim hrel hsource
         obtain ⟨t₁, hfirst⟩ := StepPlus.firstStep hrun
-        simp [ht] at hfirst
+        rw [ht] at hfirst
+        cases hfirst
 
 /-- A finite run ending in a terminal state with a specified observable value. -/
 def TerminatesWithOutput {α : Type u}
