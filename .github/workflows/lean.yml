@@ -62,3 +62,5 @@ jobs:
         run: lake env lean HakuiKoyori/PrimitiveDivRemRuns.lean
       - name: Check emitted-program lookup semantics
         run: lake env lean HakuiKoyori/EmissionSemantics.lean
+      - name: Check normalized DIVREM layout
+        run: lake env lean HakuiKoyori/DivRemLayout.lean
