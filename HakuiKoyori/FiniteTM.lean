@@ -174,7 +174,7 @@ def unaryStackCode (M : FiniteTuringMachine)
     (M : FiniteTuringMachine) (U : UnaryInputSpec M) (n : Nat) :
     unaryStackCode M U (n + 1) =
       1 + M.alphabetSize * unaryStackCode M U n := by
-  simp [unaryStackCode, U.unarySymbol_val_eq_one]
+  simp [unaryStackCode, stackPush, U.unarySymbol_val_eq_one]
 
 /-- A pop from a nonempty unary stack returns 1 and the remaining tail. -/
 theorem stackPop_unaryStackCode_succ
