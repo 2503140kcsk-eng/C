@@ -14,6 +14,8 @@ The semantic/termination theorems are intentionally not asserted here yet.
 The file is a concrete code generator layer, not a compiler-correctness proof.
 -/
 
+universe u
+
 namespace HakuiKoyori
 namespace Compiler
 
@@ -54,6 +56,9 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
 
 @[simp] theorem rebaseTarget_offset (base k : Nat) :
     rebaseTarget base (.offset k) = .offset (base + k) := rfl
+
+@[simp] theorem rebaseTarget_blockStart (base : Nat) :
+    rebaseTarget base .blockStart = .blockStart := rfl
 
 @[simp] theorem rebaseTarget_sourcePC (base pc : Nat) :
     rebaseTarget base (.sourcePC pc) = .sourcePC pc := rfl
@@ -132,7 +137,7 @@ def divRemBlock (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
   divRemAux p destinationDiv destinationNondiv p 0
 
 /-- A finite block list can be enumerated with its source PC. -/
-def enumerateBlocks : List α → Nat → List (Nat × α)
+def enumerateBlocks {α : Type u} : List α → Nat → List (Nat × α)
   | [], _ => []
   | x :: xs, n => (n, x) :: enumerateBlocks xs (n + 1)
 
