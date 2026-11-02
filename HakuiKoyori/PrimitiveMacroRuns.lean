@@ -31,7 +31,9 @@ theorem runN_add (n m : Nat) (program : Program) (configuration : Configuration)
   induction n generalizing configuration with
   | zero => simp [runN]
   | succ n ih =>
-      simp [runN, Nat.succ_add, ih, Option.bind_assoc]
+      cases hstep : AssistantMachine.step program configuration with
+      | none => simp [runN, Nat.succ_add, hstep]
+      | some middle => simp [runN, Nat.succ_add, hstep, ih]
 
 /-- Materialize one symbolic MUL block as an M1 instruction list. -/
 def concreteMUL (factor destination : Nat) : Program :=
