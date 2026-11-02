@@ -360,6 +360,21 @@ theorem prefixLength_strict (blocks : List TemplateBlock)
               exact Nat.add_lt_add_left
                 (ih htail (Nat.lt_of_succ_lt_succ hij) hj') _
 
+
+/-- Enumerating a finite source list preserves its length. -/
+theorem enumerateBlocks_length {α : Type u} (xs : List α) (start : Nat) :
+    (enumerateBlocks xs start).length = xs.length := by
+  induction xs generalizing start with
+  | nil => rfl
+  | cons x xs ih =>
+      simp [enumerateBlocks, ih]
+
+/-- The compiler emits exactly one target block for each source instruction. -/
+theorem compileBlocks3_length
+    (program : _root_.HakuiKoyori.Compiler.Program3) :
+    (compileBlocks3 program).length = program.length := by
+  simp [compileBlocks3, enumerateBlocks_length]
+
 /-- The actual block-start function inherits the strict source-PC ordering. -/
 theorem blockStart_strict (blocks : List TemplateBlock)
     (hpos : ∀ block ∈ blocks, 0 < block.length)
