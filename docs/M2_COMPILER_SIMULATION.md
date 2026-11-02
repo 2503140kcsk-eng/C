@@ -129,26 +129,69 @@ codes of the side stacks.
 
 #### Bootstrap and output cleanup
 
-The initial M1 input code stores the entire unary word \`1^n\` in \`R\`,
-including the head cell, with \`T=L=0\`. The compiler entry block executes
-\`POP(R;T)\` and routes the returned symbol to \`(q₀,current)\`. For
-\`n=0\`, this returns blank and an empty right stack; for \`n>0\`, it
-returns \`1\` and leaves the remaining \`n-1\` symbols in \`R\`. With
-\`d₁=d(1)\`,
+The Lean source semantics uses an explicit current cell. The first input
+symbol is **not** stored in either stack. Let the finite alphabet contain
+blank digit `0` and a designated unary digit `1`. This requirement is
+carried by `UnaryInputSpec`: its witness `unarySymbol : Fin alphabetSize`
+satisfies `unarySymbol.val = 1`, so the alphabet necessarily has at least
+two symbols.
 
-\`\`\`text
-ρ(n) = d₁ * (1 + β + ... + β^(n-1)),  ρ(0)=0
-inputCode(n) = primeCode(0,0,ρ(n)) = 5^(ρ(n))
-\`\`\`
+Define the code of exactly `k` unary symbols by
 
-A halting TM must leave \`1^v\` beginning at the current head cell and
+\[
+U_\beta(0)=0,\qquad U_\beta(k+1)=1+\beta U_\beta(k).
+\]
+
+The source initial configuration is
+
+```text
+n = 0: (q₀, leftStack, current, rightStack) = (q₀, 0, blank, 0)
+n > 0: (q₀, leftStack, current, rightStack) = (q₀, 0, 1, Uβ(n-1))
+```
+
+At ordinary TM-step boundaries the virtual registers are `(T,L,R)=(0,L,R)`.
+The initial M1 program counter, however, is fixed and cannot depend on `n`.
+Use the bootstrap entry tuple
+
+```text
+n = 0: (T,L,R) = (0,0,0)
+n > 0: (T,L,R) = (1,0,Uβ(n-1))
+```
+
+and make the first three-register instruction `decJump T, label(q₀,1)`.
+Its zero branch falls through to `label(q₀,blank)`; its positive branch
+decrements `T` to zero and jumps to the unary-current control label. Thus
+the explicit current symbol is stored in finite control after one source
+bootstrap instruction. This bootstrap is not itself a simulated TM
+transition; the TM-step simulation relation starts after it.
+
+Under the fixed assignment `r0=T`, `r1=L`, `r2=R`, the actual M1 input
+translation, **before** the bootstrap executes, is
+
+```text
+inputCode(0)   = primeCode(0,0,0)       = 1
+inputCode(n+1) = primeCode(1,0,Uβ(n))   = 2 * 5^(Uβ(n))
+```
+
+After the bootstrap, the three-register code is `primeCode(0,0,Uβ(n))`
+for a nonempty input. Stage B compiles the bootstrap `decJump` using the
+prime-2 `DIVREM` block: it must not be interpreted as a raw decrement of
+the physical two-counter integer. For empty input `1` is not divisible by
+2 and is restored unchanged; for nonempty input `2*5^U` is divisible by
+2 and is divided to `5^U`. Both branches restore the physical scratch
+counter to zero.
+
+A halting TM must leave `1^v` beginning at the current head cell and
 followed immediately by blank. The cleanup first inspects the current
-symbol in finite control and increments \`T\` iff it is \`1\`. It then
-scans \`R\` using \`L\` as scratch, preserving \`T\`: each popped \`1\`
-increments \`T\`; blank ends the scan; any other symbol violates the output
-precondition. Finally it clears \`L\` and \`R\` by decrement-to-zero loops
-that need no scratch. The resulting virtual registers are
-\`(T,L,R)=(v,0,0)\`.
+symbol stored in finite control and increments `T` iff it is `1`. It then
+scans `R` using `L` as scratch, preserving `T`: each popped `1` increments
+`T`; blank ends the scan; any other symbol violates the output precondition.
+Finally it clears `L` and `R` by decrement-to-zero loops that need no
+scratch. The resulting virtual registers are `(T,L,R)=(v,0,0)`, so the
+Stage-B boundary code is `primeCode(v,0,0)=2^v`. The explicit output
+representation is `OutputCode(v)=2^v`, with decoder relation
+`OutputRep(v,z) ↔ z=2^v`; injectivity of powers of two gives uniqueness
+of the decoded source value.
 
 Required Stage-A lemmas:
 1. \`encodeStack\` and \`stackPop\` satisfy the exact quotient/remainder equations.
@@ -256,21 +299,34 @@ To avoid silently assuming identity encodings, the surface source is fixed as a
 deterministic one-tape Turing machine over a finite alphabet containing blank
 and a distinguished unary output symbol.
 
-At the initial source configuration, the input tape is the unary word
-`1^n` beginning at the head and blank outside those (n) cells. Let
-`d₁ ∈ {1,…,B−1}` be the fixed digit assigned to symbol `1`; its right-stack
-code is the explicit finite sum
-`ρ(n) = d₁ * (1 + B + … + B^(n−1))`, with `ρ(0)=0`.
-The register assignment fixed above is `r0=T`, `r1=L`, and `r2=R`;
-therefore the left stack and scratch register are zero, while the right-stack
-code occupies the third prime exponent. The alphabet must have at least two
-symbols (`B≥2`) so blank digit zero and unary digit `d₁>0` are distinct.
-Thus the target's M1 input is the explicit computable code
+At the initial source configuration, the tape contains the unary word
+`1^n` beginning at the head and blank outside those `n` cells. The current
+cell is explicit. Define `Uβ(0)=0` and
+`Uβ(k+1)=1+β*Uβ(k)` as the base-`β` code of `k` unary symbols. Thus
 
-`inputCode(n) = primeCode(0, 0, ρ(n)) = 5^(ρ(n))`.
+```text
+n = 0: current = blank, rightStack = 0
+n > 0: current = 1,     rightStack = Uβ(n-1)
+```
 
-The compiler theorem is therefore stated for the encoded target input, not
-incorrectly asserted for the same raw integer on both machines.
+The M1 program has a fixed entry PC, so its initial virtual tuple uses
+`(T,L,R)=(0,0,0)` for empty input and `(1,0,Uβ(n-1))` for nonempty input.
+The first three-register instruction decodes that marker into the finite
+control label `(q₀,current)` and leaves `T=0`. With `r0=T`, `r1=L`, and
+`r2=R`, the actual initial two-counter input is therefore
+
+```text
+inputCode(0)   = primeCode(0,0,0)        = 1
+inputCode(n+1) = primeCode(1,0,Uβ(n))    = 2 * 5^(Uβ(n))
+```
+
+The bootstrap itself is compiled by the Stage-B backend as a prime-2
+`DIVREM` macro. It is not a raw decrement of the physical encoded integer.
+The post-bootstrap virtual tuple for nonempty input is `(0,0,Uβ(n))`.
+
+The distinguished unary digit must be explicitly supplied as a valid
+nonzero alphabet symbol. The finite model therefore carries the `UnaryInputSpec`
+witness; `0 < alphabetSize` alone would not imply the existence of digit `1`.
 
 A halting source machine is required to leave its natural-number result as a
 unary block `1^v` beginning at the head, followed by blank. The Stage-A
