@@ -196,7 +196,7 @@ theorem forwardSimulation_terminal_iff
   · exact terminal hrel
   · intro ht
     cases hsource : sourceStep s with
-    | none => exact hsource
+    | none => rfl
     | some s' =>
         obtain ⟨t', hrun, hrel'⟩ := sim hrel hsource
         obtain ⟨t₁, hfirst⟩ := StepPlus.firstStep hrun
