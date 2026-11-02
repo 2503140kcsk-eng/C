@@ -42,17 +42,20 @@ deriving DecidableEq, Repr
 abbrev TemplateBlock := List TemplateInstruction
 
 /-- Rebase only labels internal to a nested block. -/
+@[expose]
 def rebaseTarget (base : Nat) : JumpTarget → JumpTarget
   | .offset k => .offset (base + k)
   | .blockStart => .blockStart
   | .sourcePC pc => .sourcePC pc
 
 /-- Rebase one instruction while preserving external source labels. -/
+@[expose]
 def rebaseInstruction (base : Nat) : TemplateInstruction → TemplateInstruction
   | .inc which => .inc which
   | .decJump which target => .decJump which (rebaseTarget base target)
 
 /-- Rebase every local label in a nested code block. -/
+@[expose]
 def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
   block.map (rebaseInstruction base)
 
@@ -70,6 +73,7 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
   simp [rebaseBlock]
 
 /-- Identity jump using only the selected counter's two primitive instructions. -/
+@[expose]
 def identityJump (which : Counter) (target : JumpTarget) : TemplateBlock :=
   [.inc which, .decJump which target]
 
@@ -99,6 +103,7 @@ theorem identityJump_correct (which : Counter) (target a b : Nat) :
 Multiply the left counter by p, starting with right = 0.
 The exit target is symbolic and the block uses only inc/decJump.
 -/
+@[expose]
 def mulBlock (p : Nat) (destination : JumpTarget) : TemplateBlock :=
   [ .decJump .left (.offset 7)
   , .decJump .right (.offset 4)
@@ -120,6 +125,7 @@ theorem mulBlock_length (p : Nat) (destination : JumpTarget) :
 Transfer block: on entry left=0 and right=q, return left=m*q+r and right=0.
 This block is a code template; its loop proof is a separate obligation.
 -/
+@[expose]
 def transferBlock (m r : Nat) (destination : JumpTarget) : TemplateBlock :=
   [.decJump .right (.offset (3 + r))] ++
   List.replicate r (.inc .left) ++
@@ -141,6 +147,7 @@ On entry (left,right)=(N,0), the block exits at destinationDiv with
 The p finite-control tests distinguish the residue; every nested transfer
 block is rebased before concatenation.
 -/
+@[expose]
 def divRemAux (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
     Nat → Nat → TemplateBlock
   | 0, _ =>
@@ -155,6 +162,7 @@ def divRemAux (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
       [.decJump .left (.offset nextOffset)] ++ handler ++ rest
 
 /-- Complete p-residue quotient/remainder block. -/
+@[expose]
 def divRemBlock (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
     TemplateBlock :=
   divRemAux p destinationDiv destinationNondiv p 0
@@ -165,14 +173,17 @@ def enumerateBlocks {α : Type u} : List α → Nat → List (Nat × α)
   | x :: xs, n => (n, x) :: enumerateBlocks xs (n + 1)
 
 /-- The global start address of source block pc. -/
+@[expose]
 def blockStart (blocks : List TemplateBlock) (pc : Nat) : Nat :=
   ((blocks.take pc).map List.length).sum
 
 /-- The complete length of a flattened block list. -/
+@[expose]
 def blocksLength (blocks : List TemplateBlock) : Nat :=
   (blocks.map List.length).sum
 
 /-- Resolve a local label or source PC to its final absolute instruction index. -/
+@[expose]
 def resolveTarget (blocks : List TemplateBlock) (base : Nat) (target : JumpTarget) : Nat :=
   match target with
   | .offset k => base + k
@@ -194,23 +205,27 @@ def resolveTarget (blocks : List TemplateBlock) (base : Nat) (target : JumpTarge
       if pc < blocks.length then blockStart blocks pc else blocksLength blocks := rfl
 
 /-- Relocate one symbolic instruction into the actual M1 target ISA. -/
+@[expose]
 def relocateInstruction (blocks : List TemplateBlock) (base : Nat) :
     TemplateInstruction → Instruction
   | .inc which => .inc which
   | .decJump which target => .decJump which (resolveTarget blocks base target)
 
 /-- Relocate and flatten all blocks, preserving their source order. -/
+@[expose]
 def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
   (enumerateBlocks blocks 0).flatMap fun (pc, block) =>
     block.map (relocateInstruction blocks (blockStart blocks pc))
 
 /-- Prime assigned to each virtual register in the M2 representation. -/
+@[expose]
 def registerPrime : _root_.HakuiKoyori.Compiler.Register3 → Nat
   | _root_.HakuiKoyori.Compiler.Register3.r0 => 2
   | _root_.HakuiKoyori.Compiler.Register3.r1 => 3
   | _root_.HakuiKoyori.Compiler.Register3.r2 => 5
 
 /-- Compile one virtual three-register instruction to a symbolic two-counter block. -/
+@[expose]
 def compileInstruction3 (pc : Nat) :
     _root_.HakuiKoyori.Compiler.Instruction3 → TemplateBlock
   | _root_.HakuiKoyori.Compiler.Instruction3.inc which =>
@@ -219,12 +234,14 @@ def compileInstruction3 (pc : Nat) :
       divRemBlock (registerPrime which) (.sourcePC target) (.sourcePC (pc + 1))
 
 /-- Symbolic block sequence produced for a complete finite three-register program. -/
+@[expose]
 def compileBlocks3 (program : _root_.HakuiKoyori.Compiler.Program3) : List TemplateBlock :=
   (enumerateBlocks (α := _root_.HakuiKoyori.Compiler.Instruction3) program 0).map
     fun (pc, instruction) =>
     compileInstruction3 pc instruction
 
 /-- Whole-program compiler into the existing two-counter instruction datatype. -/
+@[expose]
 def compileProgram3 (program : _root_.HakuiKoyori.Compiler.Program3) : Program :=
   emitBlocks (compileBlocks3 program)
 
