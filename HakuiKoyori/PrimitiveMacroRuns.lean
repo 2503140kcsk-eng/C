@@ -115,7 +115,7 @@ theorem concreteMUL_identity_first
         AssistantMachine.Instruction.decJump .left destination,
         AssistantMachine.Instruction.inc .left,
         AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
+        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + factor) (by simp)]
     simp only [Nat.add_sub_cancel_left]
     rw [List.getElem?_append_right
       (l₁ := List.replicate factor (AssistantMachine.Instruction.inc .right))
@@ -143,7 +143,7 @@ theorem concreteMUL_identity_second
         AssistantMachine.Instruction.decJump .left destination,
         AssistantMachine.Instruction.inc .left,
         AssistantMachine.Instruction.inc .left,
-        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 7 + i) (by simp)]
+        AssistantMachine.Instruction.decJump .left 1] : Program)) (i := 8 + factor) (by simp)]
     have hidx : 8 + factor = 7 + (factor + 1) := by omega
     rw [hidx, Nat.add_sub_cancel_left]
     rw [List.getElem?_append_right
