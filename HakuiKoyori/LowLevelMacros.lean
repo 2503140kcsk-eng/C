@@ -272,15 +272,9 @@ theorem prefixLength_terminal (blocks : List TemplateBlock) :
 /-- The emitted program ends exactly at the address assigned to the terminal PC. -/
 theorem emitBlocks_terminal_address (blocks : List TemplateBlock) :
     (emitBlocks blocks).length = blockStart blocks blocks.length := by
-  rw [emitBlocks_length, blockStart_eq_prefixLength]
+  rw [emitBlocks_length]
+  change blocksLength blocks = prefixLength blocks blocks.length
   exact (prefixLength_terminal blocks).symm
-
-/-- Compilation keeps the source instruction count as the number of blocks. -/
-theorem compileProgram3_block_count
-    (program : _root_.HakuiKoyori.Compiler.Program3) :
-    (compileBlocks3 program).length = program.length :=
-  compileBlocks3_length program
-
 
 /-- Prime assigned to each virtual register in the M2 representation. -/
 @[expose]
@@ -427,6 +421,12 @@ theorem compileBlocks3_length
     (program : _root_.HakuiKoyori.Compiler.Program3) :
     (compileBlocks3 program).length = program.length := by
   simp [compileBlocks3, enumerateBlocks_length]
+
+/-- Compilation keeps the source instruction count as the number of blocks. -/
+theorem compileProgram3_block_count
+    (program : _root_.HakuiKoyori.Compiler.Program3) :
+    (compileBlocks3 program).length = program.length :=
+  compileBlocks3_length program
 
 /-- The actual block-start function inherits the strict source-PC ordering. -/
 theorem blockStart_strict (blocks : List TemplateBlock)
