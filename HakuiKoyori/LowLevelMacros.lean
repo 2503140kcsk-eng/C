@@ -201,27 +201,27 @@ def emitBlocks (blocks : List TemplateBlock) : List Instruction :=
     block.map (relocateInstruction blocks (blockStart blocks pc))
 
 /-- Prime assigned to each virtual register in the M2 representation. -/
-def registerPrime : HakuiKoyori.Compiler.Register3 → Nat
-  | HakuiKoyori.Compiler.Register3.r0 => 2
-  | HakuiKoyori.Compiler.Register3.r1 => 3
-  | HakuiKoyori.Compiler.Register3.r2 => 5
+def registerPrime : _root_.HakuiKoyori.Compiler.Register3 → Nat
+  | _root_.HakuiKoyori.Compiler.Register3.r0 => 2
+  | _root_.HakuiKoyori.Compiler.Register3.r1 => 3
+  | _root_.HakuiKoyori.Compiler.Register3.r2 => 5
 
 /-- Compile one virtual three-register instruction to a symbolic two-counter block. -/
 def compileInstruction3 (pc : Nat) :
-    HakuiKoyori.Compiler.Instruction3 → TemplateBlock
-  | HakuiKoyori.Compiler.Instruction3.inc which =>
+    _root_.HakuiKoyori.Compiler.Instruction3 → TemplateBlock
+  | _root_.HakuiKoyori.Compiler.Instruction3.inc which =>
       mulBlock (registerPrime which) (.sourcePC (pc + 1))
-  | HakuiKoyori.Compiler.Instruction3.decJump which target =>
+  | _root_.HakuiKoyori.Compiler.Instruction3.decJump which target =>
       divRemBlock (registerPrime which) (.sourcePC target) (.sourcePC (pc + 1))
 
 /-- Symbolic block sequence produced for a complete finite three-register program. -/
-def compileBlocks3 (program : HakuiKoyori.Compiler.Program3) : List TemplateBlock :=
-  (enumerateBlocks (α := HakuiKoyori.Compiler.Instruction3) program 0).map
+def compileBlocks3 (program : _root_.HakuiKoyori.Compiler.Program3) : List TemplateBlock :=
+  (enumerateBlocks (α := _root_.HakuiKoyori.Compiler.Instruction3) program 0).map
     fun (pc, instruction) =>
     compileInstruction3 pc instruction
 
 /-- Whole-program compiler into the existing two-counter instruction datatype. -/
-def compileProgram3 (program : HakuiKoyori.Compiler.Program3) : Program :=
+def compileProgram3 (program : _root_.HakuiKoyori.Compiler.Program3) : Program :=
   emitBlocks (compileBlocks3 program)
 
 end Compiler
