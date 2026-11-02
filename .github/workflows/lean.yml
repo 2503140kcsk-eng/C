@@ -15,7 +15,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Install pinned Lean toolchain and build
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: false
+          axiom-audit: false
+      - name: Resolve pinned Lake dependencies
+        run: lake update
+      - name: Build and audit
         uses: leanprover/lean-action@v1
         with:
           build: true
