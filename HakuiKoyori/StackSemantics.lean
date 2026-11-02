@@ -167,9 +167,12 @@ theorem turingStep_none_iff {base : Nat} {delta : TMDelta}
     cases hdelta : delta configuration.state configuration.current with
     | none => rfl
     | some action =>
-        cases action.move <;> simp [turingStep, hdelta] at hstep
+        cases action.move <;>
+          simp [turingStep, hdelta] at hstep <;>
+          contradiction
   · intro hdelta
-    simp [turingStep, hdelta]
+    rw [hdelta]
+    rfl
 
 /-- One step with a stay action only changes the state and current symbol. -/
 theorem turingStep_stay {base : Nat} {delta : TMDelta}
