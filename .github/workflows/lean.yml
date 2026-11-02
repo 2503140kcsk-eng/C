@@ -2,7 +2,7 @@ name: Lean proof check
 
 on:
   push:
-    branches: [main, "m1/**"]
+    branches: [main, "m1/**", "m2/**"]
   pull_request:
   workflow_dispatch:
 
