@@ -109,7 +109,7 @@ theorem concreteTR_remainder_get
             ([.inc .left, .decJump .left destination] ++
               (List.replicate m (.inc .left) ++
                 [.inc .left, .decJump .left 0]))) := by
-    simp [concreteTR, prefixR, trHead, trTail, transferBlock,
+    simp [concreteTR, prefixR, transferBlock,
       identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixR.length = 1 := by simp [prefixR]
   have hreplicateLength :
@@ -143,7 +143,7 @@ theorem concreteTR_transfer_get
         prefixM ++
           (List.replicate m (.inc .left) ++
             [.inc .left, .decJump .left 0]) := by
-    simp [concreteTR, prefixM, trHead, trTail, transferBlock,
+    simp [concreteTR, prefixM, transferBlock,
       identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixM.length = 3 + r := by
     simp only [prefixM, List.length_append, List.length_cons,
@@ -178,7 +178,7 @@ theorem concreteTR_remainder_jump_get
           ([.inc .left, .decJump .left destination] ++
             (List.replicate m (.inc .left) ++
               [.inc .left, .decJump .left 0])) := by
-    simp [concreteTR, prefixR, trHead, trTail, transferBlock,
+    simp [concreteTR, prefixR, transferBlock,
       identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixR.length = 1 + r := by
     simp [prefixR]
@@ -220,7 +220,7 @@ theorem concreteTR_final_jump_get
   have hshape :
       concreteTR m r destination =
         prefixEnd ++ [.inc .left, .decJump .left 0] := by
-    simp [concreteTR, prefixEnd, trHead, trTail, transferBlock,
+    simp [concreteTR, prefixEnd, transferBlock,
       identityJump, relocateInstruction, resolveTarget, List.append_assoc]
   have hlength : prefixEnd.length = 3 + r + m := by
     simp only [prefixEnd, List.length_append, List.length_cons,
