@@ -379,5 +379,188 @@ theorem concreteTR_correct_run
     _ = some ⟨destination, a + m * q + r, 0⟩ := by
           simp [houter, htail]
 
+
+/-!
+## Contextual TR refinement for nested compiler handlers
+
+The preceding theorem describes a TR block materialized at PC zero.  The
+following theorem abstracts only its instruction lookup facts, so it can be
+instantiated for a rebased TR handler embedded at an arbitrary PC in a
+larger DIVREM program.  It continues to use the actual AssistantMachine
+transition function and exact primitive-step counts.
+-/
+
+/-- One positive-quotient round of a TR handler at an arbitrary program counter. -/
+theorem runN_transfer_positive_round_at
+    (program : Program) (base m r destination a b : Nat)
+    (hentry :
+      program[base]? =
+        some (Instruction.decJump Counter.right (base + 3 + r)))
+    (htransfer : ∀ i, i < m →
+      program[base + 3 + r + i]? = some (Instruction.inc Counter.left))
+    (hfinalInc :
+      program[base + 3 + r + m]? = some (Instruction.inc Counter.left))
+    (hfinalJump :
+      program[base + 3 + r + m + 1]? =
+        some (Instruction.decJump Counter.left base)) :
+    runN (m + 3) program ⟨base, a, b + 1⟩ =
+      some ⟨base, a + m, b⟩ := by
+  have hstep :
+      AssistantMachine.step program ⟨base, a, b + 1⟩ =
+        some ⟨base + 3 + r, a, b⟩ := by
+    rw [AssistantMachine.step]
+    simp [hentry, AssistantMachine.readCounter,
+      AssistantMachine.writeCounter, AssistantMachine.setPC]
+  have hfirst :
+      runN 1 program ⟨base, a, b + 1⟩ =
+        some ⟨base + 3 + r, a, b⟩ := by
+    simp [runN, hstep]
+  have hbody :
+      runN m program ⟨base + 3 + r, a, b⟩ =
+        some ⟨base + 3 + r + m, a + m, b⟩ :=
+    runN_incLeft_segment program (base + 3 + r) m a b htransfer
+  have htail :
+      runN 2 program ⟨base + 3 + r + m, a + m, b⟩ =
+        some ⟨base, a + m, b⟩ := by
+    exact runN_identityJumpLeft program
+      (base + 3 + r + m) base (a + m) b hfinalInc hfinalJump
+  calc
+    runN (m + 3) program ⟨base, a, b + 1⟩ =
+      runN (1 + (m + 2)) program ⟨base, a, b + 1⟩ := by congr 1 <;> omega
+    _ =
+      (runN 1 program ⟨base, a, b + 1⟩).bind
+        (fun middle => runN (m + 2) program middle) :=
+      runN_add 1 (m + 2) program ⟨base, a, b + 1⟩
+    _ = runN (m + 2) program ⟨base + 3 + r, a, b⟩ := by simp [hfirst]
+    _ =
+      (runN m program ⟨base + 3 + r, a, b⟩).bind
+        (fun middle => runN 2 program middle) :=
+      runN_add m 2 program ⟨base + 3 + r, a, b⟩
+    _ = some ⟨base, a + m, b⟩ := by simp [hbody, htail]
+
+/-- The zero-quotient branch of a contextual TR handler adds the residue and exits. -/
+theorem runN_transfer_remainder_at
+    (program : Program) (base r destination a : Nat)
+    (hentry :
+      program[base]? =
+        some (Instruction.decJump Counter.right (base + 3 + r)))
+    (hremainder : ∀ i, i < r →
+      program[base + 1 + i]? = some (Instruction.inc Counter.left))
+    (hjumpInc :
+      program[base + 1 + r]? = some (Instruction.inc Counter.left))
+    (hjump :
+      program[base + 1 + r + 1]? =
+        some (Instruction.decJump Counter.left destination)) :
+    runN (r + 3) program ⟨base, a, 0⟩ =
+      some ⟨destination, a + r, 0⟩ := by
+  have hstep :
+      AssistantMachine.step program ⟨base, a, 0⟩ =
+        some ⟨base + 1, a, 0⟩ := by
+    rw [AssistantMachine.step]
+    simp [hentry, AssistantMachine.readCounter,
+      AssistantMachine.writeCounter, AssistantMachine.setPC]
+  have hfirst :
+      runN 1 program ⟨base, a, 0⟩ =
+        some ⟨base + 1, a, 0⟩ := by
+    simp [runN, hstep]
+  have hbody :
+      runN r program ⟨base + 1, a, 0⟩ =
+        some ⟨base + 1 + r, a + r, 0⟩ :=
+    runN_incLeft_segment program (base + 1) r a 0 hremainder
+  have htail :
+      runN 2 program ⟨base + 1 + r, a + r, 0⟩ =
+        some ⟨destination, a + r, 0⟩ := by
+    exact runN_identityJumpLeft program
+      (base + 1 + r) destination (a + r) 0 hjumpInc
+      (by simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hjump)
+  calc
+    runN (r + 3) program ⟨base, a, 0⟩ =
+      runN (1 + (r + 2)) program ⟨base, a, 0⟩ := by congr 1 <;> omega
+    _ =
+      (runN 1 program ⟨base, a, 0⟩).bind
+        (fun middle => runN (r + 2) program middle) :=
+      runN_add 1 (r + 2) program ⟨base, a, 0⟩
+    _ = runN (r + 2) program ⟨base + 1, a, 0⟩ := by simp [hfirst]
+    _ =
+      (runN r program ⟨base + 1, a, 0⟩).bind
+        (fun middle => runN 2 program middle) :=
+      runN_add r 2 program ⟨base + 1, a, 0⟩
+    _ = some ⟨destination, a + r, 0⟩ := by simp [hbody, htail]
+
+/-- Repeating the positive-quotient round q times transfers m*q units. -/
+theorem runN_transfer_outer_loop_at
+    (program : Program) (base m r destination a q : Nat)
+    (hentry :
+      program[base]? =
+        some (Instruction.decJump Counter.right (base + 3 + r)))
+    (htransfer : ∀ i, i < m →
+      program[base + 3 + r + i]? = some (Instruction.inc Counter.left))
+    (hfinalInc :
+      program[base + 3 + r + m]? = some (Instruction.inc Counter.left))
+    (hfinalJump :
+      program[base + 3 + r + m + 1]? =
+        some (Instruction.decJump Counter.left base)) :
+    runN (q * (m + 3)) program ⟨base, a, q⟩ =
+      some ⟨base, a + m * q, 0⟩ := by
+  induction q generalizing a with
+  | zero =>
+      simp [runN]
+  | succ q ih =>
+      have hround := runN_transfer_positive_round_at
+        program base m r destination a q hentry htransfer hfinalInc hfinalJump
+      have hrest := ih (a + m)
+      have hcount : (q + 1) * (m + 3) =
+          (m + 3) + q * (m + 3) := by ring
+      calc
+        runN ((q + 1) * (m + 3)) program ⟨base, a, q + 1⟩ =
+          (runN (m + 3) program ⟨base, a, q + 1⟩).bind
+            (fun middle => runN (q * (m + 3)) program middle) := by
+              rw [hcount]
+              exact runN_add (m + 3) (q * (m + 3)) program
+                ⟨base, a, q + 1⟩
+        _ = runN (q * (m + 3)) program ⟨base, a + m, q⟩ := by
+              simp [hround]
+        _ = some ⟨base, a + m + m * q, 0⟩ := hrest
+        _ = some ⟨base, a + m * (q + 1), 0⟩ := by
+              congr 1 <;> ring
+
+/-- A literal TR handler at an arbitrary PC has the expected value and exact cost. -/
+theorem runN_transfer_correct_at
+    (program : Program) (base m r destination a q : Nat)
+    (hentry :
+      program[base]? =
+        some (Instruction.decJump Counter.right (base + 3 + r)))
+    (hremainder : ∀ i, i < r →
+      program[base + 1 + i]? = some (Instruction.inc Counter.left))
+    (hjumpInc :
+      program[base + 1 + r]? = some (Instruction.inc Counter.left))
+    (hjump :
+      program[base + 1 + r + 1]? =
+        some (Instruction.decJump Counter.left destination))
+    (htransfer : ∀ i, i < m →
+      program[base + 3 + r + i]? = some (Instruction.inc Counter.left))
+    (hfinalInc :
+      program[base + 3 + r + m]? = some (Instruction.inc Counter.left))
+    (hfinalJump :
+      program[base + 3 + r + m + 1]? =
+        some (Instruction.decJump Counter.left base)) :
+    runN (q * (m + 3) + r + 3) program ⟨base, a, q⟩ =
+      some ⟨destination, a + m * q + r, 0⟩ := by
+  have houter := runN_transfer_outer_loop_at program base m r destination a q
+    hentry htransfer hfinalInc hfinalJump
+  have htail := runN_transfer_remainder_at program base r destination
+    (a + m * q) hentry hremainder hjumpInc hjump
+  have hcount : q * (m + 3) + r + 3 =
+      q * (m + 3) + (r + 3) := by omega
+  calc
+    runN (q * (m + 3) + r + 3) program ⟨base, a, q⟩ =
+      (runN (q * (m + 3)) program ⟨base, a, q⟩).bind
+        (fun middle => runN (r + 3) program middle) := by
+          rw [hcount]
+          exact runN_add (q * (m + 3)) (r + 3) program ⟨base, a, q⟩
+    _ = some ⟨destination, a + m * q + r, 0⟩ := by
+          simp [houter, htail]
+
+
 end Compiler
 end HakuiKoyori
