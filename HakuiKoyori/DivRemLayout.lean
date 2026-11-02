@@ -41,11 +41,24 @@ theorem divRemStageOffset_succ (p start i : Nat) :
   | zero =>
       simp [divRemStageOffset]
   | succ i ih =>
-      simp only [divRemStageOffset]
-      rw [ih]
-      have hindex : (start + 1) + i = start + (i + 1) := by omega
-      rw [hindex]
-      omega
+      calc
+        divRemStageOffset p start (i + 2) =
+            divRemStageOffset p start (i + 1) +
+              divRemStageSpan p (start + (i + 1)) := by
+                rfl
+        _ = (divRemStageSpan p start +
+              divRemStageOffset p (start + 1) i) +
+              divRemStageSpan p (start + (i + 1)) := by
+                rw [ih]
+        _ = divRemStageSpan p start +
+              (divRemStageOffset p (start + 1) i +
+                divRemStageSpan p ((start + 1) + i)) := by
+                have hindex : start + (i + 1) = (start + 1) + i := by omega
+                rw [hindex]
+                omega
+        _ = divRemStageSpan p start +
+              divRemStageOffset p (start + 1) (i + 1) := by
+                rfl
 
 /-- Every test-to-test span is positive, even for an empty or zero divisor. -/
 theorem divRemStageSpan_pos (p residue : Nat) :
@@ -75,6 +88,7 @@ theorem divRemStageSpan_eq_handler_length
         (transferBlock (divRemStageMultiplier p residue) residue destination)).length := by
   rw [rebaseBlock_length, transferBlock_length]
   simp [divRemStageSpan, Nat.add_assoc]
+  omega
 
 /--
 Accumulator presentation of the nested DIVREM generator.  `offset` is the
@@ -111,6 +125,7 @@ theorem divRemAuxFrom_eq_rebase
       divRemAuxFrom p destinationDiv destinationNondiv fuel residue offset =
         rebaseBlock offset
           (divRemAux p destinationDiv destinationNondiv fuel residue) := by
+  intro fuel
   induction fuel with
   | zero =>
       intro residue offset
@@ -154,7 +169,7 @@ theorem divRemAuxFrom_eq_rebase
             rebaseBlock newNextOffset
               (divRemAux p destinationDiv destinationNondiv fuel
                 (residue + 1)) :=
-              ih fuel (residue + 1) newNextOffset
+              ih (residue + 1) newNextOffset
           _ = rebaseBlock offset
               (rebaseBlock oldNextOffset
                 (divRemAux p destinationDiv destinationNondiv fuel
@@ -167,6 +182,17 @@ theorem divRemAuxFrom_eq_rebase
       rw [htest, hhandler, hrest]
       rfl
 
+/-- Rebase by zero is the identity map on a template block. -/
+theorem divRemLayout_rebaseBlock_zero (block : TemplateBlock) :
+    rebaseBlock 0 block = block := by
+  have hinstruction : rebaseInstruction 0 = id := by
+    funext instruction
+    cases instruction with
+    | inc which => rfl
+    | decJump which target =>
+        cases target <;> simp [rebaseInstruction, rebaseTarget]
+  simp [rebaseBlock, hinstruction]
+
 /-- The complete DIVREM block is the normalized accumulator presentation. -/
 theorem divRemBlock_eq_divRemAuxFrom
     (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
@@ -175,7 +201,8 @@ theorem divRemBlock_eq_divRemAuxFrom
   unfold divRemBlock
   have h := divRemAuxFrom_eq_rebase
     p destinationDiv destinationNondiv p 0 0
-  simpa [rebaseBlock, rebaseInstruction, rebaseTarget] using h.symm
+  rw [divRemLayout_rebaseBlock_zero] at h
+  exact h.symm
 
 /-- Length of the normalized nested generator, including its three-instruction tail. -/
 theorem divRemAuxFrom_length
@@ -184,6 +211,7 @@ theorem divRemAuxFrom_length
       (divRemAuxFrom p destinationDiv destinationNondiv
         fuel residue offset).length =
         divRemStageOffset p residue fuel + 3 := by
+  intro fuel
   induction fuel with
   | zero =>
       intro residue offset
@@ -199,7 +227,8 @@ theorem divRemAuxFrom_length
             divRemStageSpan p residue := by
         rw [rebaseBlock_length, transferBlock_length]
         simp [divRemStageSpan, Nat.add_assoc]
-      rw [ih fuel (residue + 1) (offset + divRemStageSpan p residue)]
+        omega
+      rw [ih (residue + 1) (offset + divRemStageSpan p residue)]
       rw [divRemStageOffset_succ]
       omega
 
@@ -224,21 +253,21 @@ theorem divRemAuxFrom_test_lookup
             if residue = 0 then destinationDiv else destinationNondiv
           let handler := rebaseBlock (offset + 1)
             (transferBlock multiplier residue destination)
-          let prefix : TemplateBlock :=
+          let stagePrefix : TemplateBlock :=
             [TemplateInstruction.decJump Counter.left
               (.offset (offset + divRemStageSpan p residue))] ++ handler
           let rest := divRemAuxFrom p destinationDiv destinationNondiv
             fuel (residue + 1) (offset + divRemStageSpan p residue)
           have hprefix :
-              prefix.length = divRemStageSpan p residue := by
-            simp [prefix, handler, rebaseBlock_length,
+              stagePrefix.length = divRemStageSpan p residue := by
+            simp [stagePrefix, handler, rebaseBlock_length,
               transferBlock_length, divRemStageSpan, divRemStageMultiplier,
               Nat.add_assoc]
           have hshape :
               divRemAuxFrom p destinationDiv destinationNondiv
                   (fuel + 1) residue offset =
-                prefix ++ rest := by
-            simp [divRemAuxFrom, prefix, rest, List.append_assoc]
+                stagePrefix ++ rest := by
+            simp [divRemAuxFrom, stagePrefix, rest, List.append_assoc]
           have hindex :
               divRemStageOffset p residue (i + 2) =
                 divRemStageSpan p residue +
@@ -246,14 +275,14 @@ theorem divRemAuxFrom_test_lookup
             simpa [Nat.add_assoc] using
               (divRemStageOffset_succ p residue (i + 1))
           rw [hshape, hindex]
-          rw [List.getElem?_append_right (l₁ := prefix) (l₂ := rest)
+          rw [List.getElem?_append_right (l₁ := stagePrefix) (l₂ := rest)
             (i := divRemStageSpan p residue +
               divRemStageOffset p (residue + 1) (i + 1))
             (by rw [hprefix]; omega)]
           rw [show
             divRemStageSpan p residue +
                 divRemStageOffset p (residue + 1) (i + 1) -
-              prefix.length =
+              stagePrefix.length =
                 divRemStageOffset p (residue + 1) (i + 1) by
               rw [hprefix]]
           have hrec := ih (residue + 1)
@@ -294,11 +323,15 @@ theorem divRemBlock_test_offset_lt_length
     divRemStageOffset p 0 i <
       (divRemBlock p destinationDiv destinationNondiv).length := by
   rw [divRemBlock_length]
-  exact Nat.lt_of_lt_of_le
-    (by
-      simp only [divRemStageOffset]
-      exact Nat.lt_add_of_pos_right (divRemStageSpan_pos p i))
-    (divRemStageOffset_mono p 0 (Nat.le_of_lt hi) |>.trans (Nat.le_add_right _ _))
+  have hstep :
+      divRemStageOffset p 0 i <
+        divRemStageOffset p 0 (i + 1) := by
+    rw [divRemStageOffset]
+    exact Nat.lt_add_of_pos_right (divRemStageSpan_pos p i)
+  have hmono :
+      divRemStageOffset p 0 (i + 1) ≤ divRemStageOffset p 0 p :=
+    divRemStageOffset_mono p 0 (Nat.succ_le_of_lt hi)
+  omega
 
 /--
 The whole-program emitter preserves the concrete test instruction and
