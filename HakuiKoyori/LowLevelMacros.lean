@@ -68,6 +68,33 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
 @[simp] theorem rebaseTarget_sourcePC (base pc : Nat) :
     rebaseTarget base (.sourcePC pc) = .sourcePC pc := rfl
 
+
+/-- Rebased block lookup is the mapped lookup of the original instruction. -/
+@[simp] theorem rebaseBlock_getElem? (base : Nat)
+    (block : TemplateBlock) (i : Nat) :
+    (rebaseBlock base block)[i]? =
+      Option.map (rebaseInstruction base) (block[i]?) := by
+  simp [rebaseBlock]
+
+/-- Mapping relocation over a block preserves lookup and relocates the selected instruction. -/
+@[simp] theorem relocateBlock_getElem? (blocks : List TemplateBlock)
+    (base : Nat) (block : TemplateBlock) (i : Nat) :
+    (block.map (relocateInstruction blocks base))[i]? =
+      Option.map (relocateInstruction blocks base) (block[i]?) := by
+  simp
+
+/-- Looking up a rebased and then relocated nested instruction is pointwise composition. -/
+theorem relocateRebasedBlock_getElem? (blocks : List TemplateBlock)
+    (base nestedOffset : Nat) (block : TemplateBlock) (i : Nat) :
+    ((rebaseBlock nestedOffset block).map
+      (relocateInstruction blocks base))[i]? =
+        Option.map
+          (fun instruction =>
+            relocateInstruction blocks base
+              (rebaseInstruction nestedOffset instruction))
+          (block[i]?) := by
+  simp [rebaseBlock]
+
 @[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
     (rebaseBlock base block).length = block.length := by
   simp [rebaseBlock]
