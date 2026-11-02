@@ -245,5 +245,178 @@ def compileBlocks3 (program : _root_.HakuiKoyori.Compiler.Program3) : List Templ
 def compileProgram3 (program : _root_.HakuiKoyori.Compiler.Program3) : Program :=
   emitBlocks (compileBlocks3 program)
 
+
+/-!
+## Relocation algebra and source-block address discipline
+
+Nested templates must compose their offsets associatively.  Whole-program
+source addresses are prefix sums of block lengths; they are monotone in
+general, and strictly increasing for valid source PCs when every emitted
+source block is nonempty.
+-/
+
+/-- Rebase composition is associative on local offsets and fixes external labels. -/
+theorem rebaseTarget_comp (outer inner : Nat) (target : JumpTarget) :
+    rebaseTarget outer (rebaseTarget inner target) =
+      rebaseTarget (outer + inner) target := by
+  cases target <;> simp [rebaseTarget, Nat.add_assoc]
+
+/-- Rebase composition for individual symbolic instructions. -/
+theorem rebaseInstruction_comp (outer inner : Nat)
+    (instruction : TemplateInstruction) :
+    rebaseInstruction outer (rebaseInstruction inner instruction) =
+      rebaseInstruction (outer + inner) instruction := by
+  cases instruction with
+  | inc which => rfl
+  | decJump which target =>
+      simp [rebaseInstruction, rebaseTarget_comp]
+
+/-- Rebase composition for whole nested blocks. -/
+theorem rebaseBlock_comp (outer inner : Nat) (block : TemplateBlock) :
+    rebaseBlock outer (rebaseBlock inner block) =
+      rebaseBlock (outer + inner) block := by
+  induction block with
+  | nil => rfl
+  | cons instruction rest ih =>
+      simp only [rebaseBlock, List.map_cons]
+      rw [rebaseInstruction_comp, ih]
+
+/-- Prefix length of the first pc source blocks. -/
+@[expose]
+def prefixLength : List TemplateBlock → Nat → Nat
+  | [], _ => 0
+  | _ :: _, 0 => 0
+  | block :: rest, pc + 1 => block.length + prefixLength rest pc
+
+/-- The implementation's blockStart is exactly the recursive prefix sum. -/
+theorem blockStart_eq_prefixLength (blocks : List TemplateBlock) (pc : Nat) :
+    blockStart blocks pc = prefixLength blocks pc := by
+  induction blocks generalizing pc with
+  | nil =>
+      simp [blockStart, prefixLength]
+  | cons block rest ih =>
+      cases pc with
+      | zero =>
+          simp [blockStart, prefixLength]
+      | succ pc =>
+          simp [blockStart, prefixLength, ih]
+
+/-- Source block starts are nondecreasing, even when some blocks are empty. -/
+theorem prefixLength_mono (blocks : List TemplateBlock) {i j : Nat}
+    (hij : i ≤ j) :
+    prefixLength blocks i ≤ prefixLength blocks j := by
+  induction blocks generalizing i j with
+  | nil =>
+      simp [prefixLength]
+  | cons block rest ih =>
+      cases i with
+      | zero =>
+          cases j with
+          | zero => rfl
+          | succ j =>
+              simp only [prefixLength]
+              exact Nat.zero_le _
+      | succ i =>
+          cases j with
+          | zero => omega
+          | succ j =>
+              simp only [prefixLength]
+              exact Nat.add_le_add_left
+                (ih (Nat.le_of_succ_le_succ hij)) _
+
+/--
+If all source blocks are nonempty, prefix lengths strictly increase for
+indices within the source program.  The upper-bound premise is essential:
+indices beyond the end all denote the same halt address.
+-/
+theorem prefixLength_strict (blocks : List TemplateBlock)
+    (hpos : ∀ block ∈ blocks, 0 < block.length)
+    {i j : Nat} (hij : i < j) (hj : j ≤ blocks.length) :
+    prefixLength blocks i < prefixLength blocks j := by
+  induction blocks generalizing i j with
+  | nil =>
+      simp [prefixLength] at hj
+      omega
+  | cons block rest ih =>
+      cases i with
+      | zero =>
+          cases j with
+          | zero => omega
+          | succ j =>
+              have hblock := hpos block (by simp)
+              simp only [prefixLength]
+              omega
+      | succ i =>
+          cases j with
+          | zero => omega
+          | succ j =>
+              have htail : ∀ b ∈ rest, 0 < b.length := by
+                intro b hb
+                exact hpos b (by simp [hb])
+              have hj' : j ≤ rest.length := by
+                simp at hj
+                omega
+              simp only [prefixLength]
+              exact Nat.add_lt_add_left
+                (ih htail (Nat.lt_of_succ_lt_succ hij) hj') _
+
+/-- The actual block-start function inherits the strict source-PC ordering. -/
+theorem blockStart_strict (blocks : List TemplateBlock)
+    (hpos : ∀ block ∈ blocks, 0 < block.length)
+    {i j : Nat} (hij : i < j) (hj : j ≤ blocks.length) :
+    blockStart blocks i < blockStart blocks j := by
+  rw [blockStart_eq_prefixLength, blockStart_eq_prefixLength]
+  exact prefixLength_strict blocks hpos hij hj
+
+/-- Every generated multiplication block is nonempty. -/
+theorem mulBlock_length_pos (p : Nat) (destination : JumpTarget) :
+    0 < (mulBlock p destination).length := by
+  rw [mulBlock_length]
+  omega
+
+/-- Every generated quotient/remainder block is nonempty, including p=0. -/
+theorem divRemBlock_length_pos (p : Nat)
+    (destinationDiv destinationNondiv : JumpTarget) :
+    0 < (divRemBlock p destinationDiv destinationNondiv).length := by
+  cases p with
+  | zero =>
+      simp [divRemBlock, divRemAux]
+  | succ p =>
+      simp [divRemBlock, divRemAux]
+
+/-- Every virtual instruction compiles to a nonempty target block. -/
+theorem compileInstruction3_length_pos (pc : Nat)
+    (instruction : _root_.HakuiKoyori.Compiler.Instruction3) :
+    0 < (compileInstruction3 pc instruction).length := by
+  cases instruction with
+  | inc which =>
+      change 0 < (mulBlock (registerPrime which) (.sourcePC (pc + 1))).length
+      exact mulBlock_length_pos _ _
+  | decJump which target =>
+      change 0 < (divRemBlock (registerPrime which)
+        (.sourcePC target) (.sourcePC (pc + 1))).length
+      exact divRemBlock_length_pos _ _ _
+
+/-- All blocks emitted for a three-register program are nonempty. -/
+theorem compileBlocks3_all_nonempty
+    (program : _root_.HakuiKoyori.Compiler.Program3) :
+    ∀ block ∈ compileBlocks3 program, 0 < block.length := by
+  intro block hmem
+  unfold compileBlocks3 at hmem
+  rcases List.mem_map.mp hmem with ⟨⟨pc, instruction⟩, _, hblock⟩
+  subst block
+  exact compileInstruction3_length_pos pc instruction
+
+/-- Distinct valid source PCs receive distinct relocated block starts. -/
+theorem compileBlocks3_blockStart_strict
+    (program : _root_.HakuiKoyori.Compiler.Program3)
+    {i j : Nat} (hij : i < j) (hj : j ≤ program.length) :
+    blockStart (compileBlocks3 program) i <
+      blockStart (compileBlocks3 program) j := by
+  apply blockStart_strict
+  · exact compileBlocks3_all_nonempty program
+  · simpa using hj
+
+
 end Compiler
 end HakuiKoyori
