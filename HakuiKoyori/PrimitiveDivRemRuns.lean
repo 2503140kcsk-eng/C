@@ -103,5 +103,209 @@ theorem runN_divRemAux_terminal_segment
   rw [divRemAux_terminal_code]
   exact runN_right_loop_segment prefix suffix root a b
 
+
+/-- A replicated instruction segment can be addressed inside a surrounding program. -/
+theorem getElem?_replicate_segment
+    {α : Type} (prefix suffix : List α) (count index : Nat)
+    (instruction : α) (hindex : index < count) :
+    (prefix ++ (List.replicate count instruction ++ suffix))
+      [prefix.length + index]? = some instruction := by
+  rw [List.getElem?_append_right
+    (l₁ := prefix) (l₂ := List.replicate count instruction ++ suffix)
+    (i := prefix.length + index) (by omega)]
+  have hsub : prefix.length + index - prefix.length = index := by omega
+  rw [hsub]
+  rw [List.getElem?_append_left
+    (l₁ := List.replicate count instruction) (l₂ := suffix)
+    (i := index) (by simp; omega)]
+  exact List.getElem?_replicate_of_lt hindex
+
+/-- The actual emitted TR handler after its enclosing DIVREM offset is applied. -/
+def relocatedTRHandler (blocks : List TemplateBlock) (root m r destinationPC : Nat) :
+    Program :=
+  (rebaseBlock 1
+    (transferBlock m r (.sourcePC destinationPC))).map
+      (relocateInstruction blocks root)
+
+/-- Exact instruction list of the nested and relocated TR handler. -/
+theorem relocatedTRHandler_eq
+    (blocks : List TemplateBlock) (root m r destinationPC : Nat) :
+    relocatedTRHandler blocks root m r destinationPC =
+      [Instruction.decJump Counter.right (root + 1 + (3 + r))] ++
+        (List.replicate r (Instruction.inc Counter.left) ++
+          ([Instruction.inc Counter.left,
+            Instruction.decJump Counter.left
+              (resolveTarget blocks root (.sourcePC destinationPC))] ++
+            (List.replicate m (Instruction.inc Counter.left) ++
+              [Instruction.inc Counter.left,
+               Instruction.decJump Counter.left (root + 1)])) := by
+  simp [relocatedTRHandler, transferBlock, rebaseBlock,
+    rebaseInstruction, rebaseTarget, identityJump, relocateInstruction,
+    resolveTarget, Nat.add_assoc]
+
+/-- The nested, relocated TR handler has the same finite length as its template. -/
+theorem relocatedTRHandler_length
+    (blocks : List TemplateBlock) (root m r destinationPC : Nat) :
+    (relocatedTRHandler blocks root m r destinationPC).length =
+      m + r + 5 := by
+  rw [relocatedTRHandler_eq]
+  simp
+  omega
+
+/--
+Execution theorem for the literal relocated TR handler inside an arbitrary
+program prefix/suffix. This is the bridge from the symbolic DIVREM handler
+to the all-input primitive theorem runN_transfer_correct_at.
+-/
+theorem runN_relocatedTRHandler
+    (blocks : List TemplateBlock) (root m r destinationPC : Nat)
+    (prefix suffix : Program) (a q : Nat)
+    (hprefix : prefix.length = root + 1) :
+    runN (q * (m + 3) + r + 3)
+      (prefix ++
+        (relocatedTRHandler blocks root m r destinationPC ++ suffix))
+      ⟨root + 1, a, q⟩ =
+      some ⟨resolveTarget blocks root (.sourcePC destinationPC),
+        a + m * q + r, 0⟩ := by
+  let entry : Instruction :=
+    .decJump .right (root + 1 + (3 + r))
+  let residueCode : Program := List.replicate r (.inc .left)
+  let jumpInc : Instruction := .inc .left
+  let jump : Instruction :=
+    .decJump .left (resolveTarget blocks root (.sourcePC destinationPC))
+  let transferCode : Program := List.replicate m (.inc .left)
+  let finalInc : Instruction := .inc .left
+  let finalJump : Instruction := .decJump .left (root + 1)
+  let handler : Program := relocatedTRHandler blocks root m r destinationPC
+  let program : Program := prefix ++ (handler ++ suffix)
+  have hhandler :
+      handler =
+        [entry] ++
+          (residueCode ++
+            ([jumpInc, jump] ++
+              (transferCode ++ [finalInc, finalJump]))) := by
+    rw [relocatedTRHandler_eq]
+    simp [entry, residueCode, jumpInc, jump, transferCode,
+      finalInc, finalJump]
+  have hlen : handler.length = m + r + 5 := by
+    rw [relocatedTRHandler_length]
+  have hEntryRaw : handler[0]? = some entry := by
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([] : Program)
+      (residueCode ++ ([jumpInc, jump] ++
+        (transferCode ++ [finalInc, finalJump])))
+      1 0 entry (by omega)
+    simpa [entry] using h
+  have hResidueRaw : ∀ i, i < r →
+      handler[1 + i]? = some (Instruction.inc .left) := by
+    intro i hi
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      [entry]
+      ([jumpInc, jump] ++ (transferCode ++ [finalInc, finalJump]))
+      r i (Instruction.inc .left) hi
+    simpa [entry, Nat.add_assoc] using h
+  have hJumpIncRaw :
+      handler[1 + r]? = some jumpInc := by
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([entry] ++ residueCode)
+      ([jump] ++ (transferCode ++ [finalInc, finalJump]))
+      1 0 jumpInc (by omega)
+    simpa [entry, residueCode, jumpInc, Nat.add_assoc] using h
+  have hJumpRaw : handler[1 + r + 1]? = some jump := by
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([entry] ++ residueCode ++ [jumpInc])
+      (transferCode ++ [finalInc, finalJump])
+      1 0 jump (by omega)
+    simpa [entry, residueCode, jumpInc, jump, Nat.add_assoc] using h
+  have hTransferRaw : ∀ i, i < m →
+      handler[3 + r + i]? = some (Instruction.inc .left) := by
+    intro i hi
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([entry] ++ residueCode ++ [jumpInc, jump])
+      [finalInc, finalJump]
+      m i (Instruction.inc .left) hi
+    simpa [entry, residueCode, jumpInc, jump, transferCode,
+      Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+  have hFinalIncRaw :
+      handler[3 + r + m]? = some finalInc := by
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([entry] ++ residueCode ++ [jumpInc, jump] ++ transferCode)
+      [finalJump] 1 0 finalInc (by omega)
+    simpa [entry, residueCode, jumpInc, jump, transferCode,
+      finalInc, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+  have hFinalJumpRaw :
+      handler[4 + r + m]? = some finalJump := by
+    rw [hhandler]
+    have h := getElem?_replicate_segment
+      ([entry] ++ residueCode ++ [jumpInc, jump] ++
+        transferCode ++ [finalInc])
+      [] 1 0 finalJump (by omega)
+    simpa [entry, residueCode, jumpInc, jump, transferCode,
+      finalInc, finalJump, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+  have hEmbed (i : Nat) (hi : i < handler.length) :
+      program[prefix.length + i]? = handler[i]? := by
+    simpa [program] using getElem?_middle prefix handler suffix i hi
+  have hEntry :
+      program[prefix.length]? =
+        some (Instruction.decJump .right (prefix.length + 3 + r)) := by
+    have h := hEmbed 0 (by rw [hlen]; omega)
+    simpa [entry, hprefix, Nat.add_assoc] using h.trans hEntryRaw
+  have hResidue : ∀ i, i < r →
+      program[prefix.length + 1 + i]? =
+        some (Instruction.inc .left) := by
+    intro i hi
+    have h := hEmbed (1 + i) (by rw [hlen]; omega)
+    have hraw := hResidueRaw i hi
+    have hindex : prefix.length + 1 + i = prefix.length + (1 + i) := by omega
+    rw [hindex]
+    exact h.trans hraw
+  have hJumpInc :
+      program[prefix.length + 1 + r]? =
+        some (Instruction.inc .left) := by
+    have h := hEmbed (1 + r) (by rw [hlen]; omega)
+    have hraw := hJumpIncRaw
+    simpa [jumpInc] using h.trans hraw
+  have hJump :
+      program[prefix.length + 1 + r + 1]? =
+        some (Instruction.decJump .left
+          (resolveTarget blocks root (.sourcePC destinationPC))) := by
+    have h := hEmbed (1 + r + 1) (by rw [hlen]; omega)
+    have hraw := hJumpRaw
+    simpa [jump] using h.trans hraw
+  have hTransfer : ∀ i, i < m →
+      program[prefix.length + 3 + r + i]? =
+        some (Instruction.inc .left) := by
+    intro i hi
+    have h := hEmbed (3 + r + i) (by rw [hlen]; omega)
+    have hraw := hTransferRaw i hi
+    have hindex :
+        prefix.length + 3 + r + i =
+          prefix.length + (3 + r + i) := by omega
+    rw [hindex]
+    exact h.trans hraw
+  have hFinalInc :
+      program[prefix.length + 3 + r + m]? =
+        some (Instruction.inc .left) := by
+    have h := hEmbed (3 + r + m) (by rw [hlen]; omega)
+    have hraw := hFinalIncRaw
+    simpa [finalInc] using h.trans hraw
+  have hFinalJump :
+      program[prefix.length + 3 + r + m + 1]? =
+        some (Instruction.decJump .left (prefix.length + 0)) := by
+    have h := hEmbed (4 + r + m) (by rw [hlen]; omega)
+    have hraw := hFinalJumpRaw
+    simpa [finalJump, hprefix, Nat.add_assoc] using h.trans hraw
+  have hrun := runN_transfer_correct_at
+    program prefix.length m r
+      (resolveTarget blocks root (.sourcePC destinationPC)) a q
+      hEntry hResidue hJumpInc hJump hTransfer hFinalInc hFinalJump
+  simpa [program, hprefix] using hrun
+
 end Compiler
 end HakuiKoyori
