@@ -9,7 +9,7 @@ public section
 
 The quotient/remainder generator ends in a three-instruction loop-back tail.
 This file proves that the literal relocated tail executes exactly as intended
-inside an arbitrary prefix/suffix context of the target program.
+inside an arbitrary pre/suffix context of the target program.
 -/
 
 namespace HakuiKoyori
@@ -17,61 +17,61 @@ namespace Compiler
 
 open AssistantMachine
 
-/-- Lookup in a middle list segment, at its absolute index after a prefix. -/
+/-- Lookup in a middle list segment, at its absolute index after a pre. -/
 theorem getElem?_middle
-    (prefix middle suffix : Program) (i : Nat)
+    (pre middle suffix : Program) (i : Nat)
     (hi : i < middle.length) :
-    (prefix ++ (middle ++ suffix))[prefix.length + i]? = middle[i]? := by
+    (pre ++ (middle ++ suffix))[pre.length + i]? = middle[i]? := by
   rw [List.getElem?_append_right
-    (l₁ := prefix) (l₂ := middle ++ suffix)
-    (i := prefix.length + i) (by omega)]
-  have hindex : prefix.length + i - prefix.length = i := by omega
+    (l₁ := pre) (l₂ := middle ++ suffix)
+    (i := pre.length + i) (by omega)]
+  have hindex : pre.length + i - pre.length = i := by omega
   rw [hindex]
   exact List.getElem?_append_left
     (l₁ := middle) (l₂ := suffix) (i := i) hi
 
 /-- Two increments and a positive decrement-jump loop back to the root PC. -/
 theorem runN_right_loop_segment
-    (prefix suffix : Program) (root a b : Nat) :
+    (pre suffix : Program) (root a b : Nat) :
     runN 3
-      (prefix ++
+      (pre ++
         ([Instruction.inc .right, Instruction.inc .right,
           Instruction.decJump .right root] ++ suffix))
-      ⟨prefix.length, a, b⟩ =
+      ⟨pre.length, a, b⟩ =
       some ⟨root, a, b + 1⟩ := by
   let middle : Program :=
     [Instruction.inc .right, Instruction.inc .right,
       Instruction.decJump .right root]
   have h0 :
-      (prefix ++ (middle ++ suffix))[prefix.length]? =
+      (pre ++ (middle ++ suffix))[pre.length]? =
         some (Instruction.inc .right) := by
     simpa [middle] using
-      (getElem?_middle prefix middle suffix 0 (by simp [middle]))
+      (getElem?_middle pre middle suffix 0 (by simp [middle]))
   have h1 :
-      (prefix ++ (middle ++ suffix))[prefix.length + 1]? =
+      (pre ++ (middle ++ suffix))[pre.length + 1]? =
         some (Instruction.inc .right) := by
     simpa [middle] using
-      (getElem?_middle prefix middle suffix 1 (by simp [middle]))
+      (getElem?_middle pre middle suffix 1 (by simp [middle]))
   have h2 :
-      (prefix ++ (middle ++ suffix))[prefix.length + 2]? =
+      (pre ++ (middle ++ suffix))[pre.length + 2]? =
         some (Instruction.decJump .right root) := by
     simpa [middle] using
-      (getElem?_middle prefix middle suffix 2 (by simp [middle]))
+      (getElem?_middle pre middle suffix 2 (by simp [middle]))
   have hs0 :
-      AssistantMachine.step (prefix ++ (middle ++ suffix))
-        ⟨prefix.length, a, b⟩ =
-        some ⟨prefix.length + 1, a, b + 1⟩ := by
+      AssistantMachine.step (pre ++ (middle ++ suffix))
+        ⟨pre.length, a, b⟩ =
+        some ⟨pre.length + 1, a, b + 1⟩ := by
     simp [AssistantMachine.step, h0, AssistantMachine.readCounter,
       AssistantMachine.writeCounter, AssistantMachine.setPC]
   have hs1 :
-      AssistantMachine.step (prefix ++ (middle ++ suffix))
-        ⟨prefix.length + 1, a, b + 1⟩ =
-        some ⟨prefix.length + 2, a, b + 2⟩ := by
+      AssistantMachine.step (pre ++ (middle ++ suffix))
+        ⟨pre.length + 1, a, b + 1⟩ =
+        some ⟨pre.length + 2, a, b + 2⟩ := by
     simp [AssistantMachine.step, h1, AssistantMachine.readCounter,
       AssistantMachine.writeCounter, AssistantMachine.setPC]
   have hs2 :
-      AssistantMachine.step (prefix ++ (middle ++ suffix))
-        ⟨prefix.length + 2, a, b + 2⟩ =
+      AssistantMachine.step (pre ++ (middle ++ suffix))
+        ⟨pre.length + 2, a, b + 2⟩ =
         some ⟨root, a, b + 1⟩ := by
     simp [AssistantMachine.step, h2, AssistantMachine.readCounter,
       AssistantMachine.writeCounter, AssistantMachine.setPC]
@@ -86,34 +86,34 @@ theorem divRemAux_terminal_code
         (relocateInstruction blocks root) =
       [Instruction.inc .right, Instruction.inc .right,
         Instruction.decJump .right root] := by
-  simp [divRemAux, rebaseBlock, relocateInstruction, resolveTarget]
+  simp [divRemAux, rebaseBlock, rebaseInstruction, rebaseTarget, relocateInstruction, resolveTarget]
 
 /-- The actual relocated DIVREM terminal tail runs in exactly three steps. -/
 theorem runN_divRemAux_terminal_segment
     (blocks : List TemplateBlock) (root offset p residue : Nat)
     (destinationDiv destinationNondiv : JumpTarget)
-    (prefix suffix : Program) (a b : Nat) :
+    (pre suffix : Program) (a b : Nat) :
     runN 3
-      (prefix ++
+      (pre ++
         (((rebaseBlock offset
           (divRemAux p destinationDiv destinationNondiv 0 residue)).map
             (relocateInstruction blocks root)) ++ suffix))
-      ⟨prefix.length, a, b⟩ =
+      ⟨pre.length, a, b⟩ =
       some ⟨root, a, b + 1⟩ := by
   rw [divRemAux_terminal_code]
-  exact runN_right_loop_segment prefix suffix root a b
+  exact runN_right_loop_segment pre suffix root a b
 
 
 /-- A replicated instruction segment can be addressed inside a surrounding program. -/
 theorem getElem?_replicate_segment
-    {α : Type} (prefix suffix : List α) (count index : Nat)
+    {α : Type} (pre suffix : List α) (count index : Nat)
     (instruction : α) (hindex : index < count) :
-    (prefix ++ (List.replicate count instruction ++ suffix))
-      [prefix.length + index]? = some instruction := by
+    (pre ++ (List.replicate count instruction ++ suffix))
+      [pre.length + index]? = some instruction := by
   rw [List.getElem?_append_right
-    (l₁ := prefix) (l₂ := List.replicate count instruction ++ suffix)
-    (i := prefix.length + index) (by omega)]
-  have hsub : prefix.length + index - prefix.length = index := by omega
+    (l₁ := pre) (l₂ := List.replicate count instruction ++ suffix)
+    (i := pre.length + index) (by omega)]
+  have hsub : pre.length + index - pre.length = index := by omega
   rw [hsub]
   rw [List.getElem?_append_left
     (l₁ := List.replicate count instruction) (l₂ := suffix)
@@ -154,15 +154,15 @@ theorem relocatedTRHandler_length
 
 /--
 Execution theorem for the literal relocated TR handler inside an arbitrary
-program prefix/suffix. This is the bridge from the symbolic DIVREM handler
+program pre/suffix. This is the bridge from the symbolic DIVREM handler
 to the all-input primitive theorem runN_transfer_correct_at.
 -/
 theorem runN_relocatedTRHandler
     (blocks : List TemplateBlock) (root m r destinationPC : Nat)
-    (prefix suffix : Program) (a q : Nat)
-    (hprefix : prefix.length = root + 1) :
+    (pre suffix : Program) (a q : Nat)
+    (hprefix : pre.length = root + 1) :
     runN (q * (m + 3) + r + 3)
-      (prefix ++
+      (pre ++
         (relocatedTRHandler blocks root m r destinationPC ++ suffix))
       ⟨root + 1, a, q⟩ =
       some ⟨resolveTarget blocks root (.sourcePC destinationPC),
@@ -177,7 +177,7 @@ theorem runN_relocatedTRHandler
   let finalInc : Instruction := .inc .left
   let finalJump : Instruction := .decJump .left (root + 1)
   let handler : Program := relocatedTRHandler blocks root m r destinationPC
-  let program : Program := prefix ++ (handler ++ suffix)
+  let program : Program := pre ++ (handler ++ suffix)
   have hhandler :
       handler =
         [entry] ++
@@ -249,60 +249,60 @@ theorem runN_relocatedTRHandler
     simpa [entry, residueCode, jumpInc, jump, transferCode,
       finalInc, finalJump, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
   have hEmbed (i : Nat) (hi : i < handler.length) :
-      program[prefix.length + i]? = handler[i]? := by
-    simpa [program] using getElem?_middle prefix handler suffix i hi
+      program[pre.length + i]? = handler[i]? := by
+    simpa [program] using getElem?_middle pre handler suffix i hi
   have hEntry :
-      program[prefix.length]? =
-        some (Instruction.decJump .right (prefix.length + 3 + r)) := by
+      program[pre.length]? =
+        some (Instruction.decJump .right (pre.length + 3 + r)) := by
     have h := hEmbed 0 (by rw [hlen]; omega)
     simpa [entry, hprefix, Nat.add_assoc] using h.trans hEntryRaw
   have hResidue : ∀ i, i < r →
-      program[prefix.length + 1 + i]? =
+      program[pre.length + 1 + i]? =
         some (Instruction.inc .left) := by
     intro i hi
     have h := hEmbed (1 + i) (by rw [hlen]; omega)
     have hraw := hResidueRaw i hi
-    have hindex : prefix.length + 1 + i = prefix.length + (1 + i) := by omega
+    have hindex : pre.length + 1 + i = pre.length + (1 + i) := by omega
     rw [hindex]
     exact h.trans hraw
   have hJumpInc :
-      program[prefix.length + 1 + r]? =
+      program[pre.length + 1 + r]? =
         some (Instruction.inc .left) := by
     have h := hEmbed (1 + r) (by rw [hlen]; omega)
     have hraw := hJumpIncRaw
     simpa [jumpInc] using h.trans hraw
   have hJump :
-      program[prefix.length + 1 + r + 1]? =
+      program[pre.length + 1 + r + 1]? =
         some (Instruction.decJump .left
           (resolveTarget blocks root (.sourcePC destinationPC))) := by
     have h := hEmbed (1 + r + 1) (by rw [hlen]; omega)
     have hraw := hJumpRaw
     simpa [jump] using h.trans hraw
   have hTransfer : ∀ i, i < m →
-      program[prefix.length + 3 + r + i]? =
+      program[pre.length + 3 + r + i]? =
         some (Instruction.inc .left) := by
     intro i hi
     have h := hEmbed (3 + r + i) (by rw [hlen]; omega)
     have hraw := hTransferRaw i hi
     have hindex :
-        prefix.length + 3 + r + i =
-          prefix.length + (3 + r + i) := by omega
+        pre.length + 3 + r + i =
+          pre.length + (3 + r + i) := by omega
     rw [hindex]
     exact h.trans hraw
   have hFinalInc :
-      program[prefix.length + 3 + r + m]? =
+      program[pre.length + 3 + r + m]? =
         some (Instruction.inc .left) := by
     have h := hEmbed (3 + r + m) (by rw [hlen]; omega)
     have hraw := hFinalIncRaw
     simpa [finalInc] using h.trans hraw
   have hFinalJump :
-      program[prefix.length + 3 + r + m + 1]? =
-        some (Instruction.decJump .left (prefix.length + 0)) := by
+      program[pre.length + 3 + r + m + 1]? =
+        some (Instruction.decJump .left (pre.length + 0)) := by
     have h := hEmbed (4 + r + m) (by rw [hlen]; omega)
     have hraw := hFinalJumpRaw
     simpa [finalJump, hprefix, Nat.add_assoc] using h.trans hraw
   have hrun := runN_transfer_correct_at
-    program prefix.length m r
+    program pre.length m r
       (resolveTarget blocks root (.sourcePC destinationPC)) a q
       hEntry hResidue hJumpInc hJump hTransfer hFinalInc hFinalJump
   simpa [program, hprefix] using hrun
