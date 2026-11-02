@@ -598,7 +598,7 @@ theorem divRemAux_length_exact
       simp [divRemAux, divRemAuxLength]
   | succ fuel ih =>
       simp [divRemAux, divRemAuxLength, rebaseBlock_length,
-        transferBlock_length, ih] <;> omega
+        transferBlock_length, ih]
 
 /-- For a positive starting residue, every handler uses multiplier p. -/
 theorem divRemAuxLength_pos_residue
@@ -609,7 +609,7 @@ theorem divRemAuxLength_pos_residue
   | zero =>
       simp [divRemAuxLength, divRemTriangular]
   | succ fuel ih =>
-      simp only [divRemAuxLength, if_neg (by omega)]
+      simp only [divRemAuxLength, if_neg (Nat.ne_of_gt hresidue)]
       rw [ih (residue + 1) (by omega)]
       simp only [divRemTriangular]
       ring
@@ -619,7 +619,7 @@ theorem divRemAuxLength_zero_succ
     (p fuel : Nat) :
     divRemAuxLength p (fuel + 1) 0 =
       10 + fuel * (p + 6) + divRemTriangular (fuel + 1) := by
-  simp only [divRemAuxLength, if_pos rfl]
+  simp only [divRemAuxLength, if_pos (show True from trivial)]
   rw [divRemAuxLength_pos_residue p fuel 1 (by omega)]
   simp only [divRemTriangular]
   ring
