@@ -200,5 +200,80 @@ theorem two_dvd_primeCode_iff (a b c : Nat) :
         rw [Nat.pow_succ]
         ac_rfl
 
+
+/-- A prime other than 2 cannot divide a power of 2. -/
+theorem not_three_dvd_two_pow (n : Nat) : ¬ 3 ∣ 2 ^ n := by
+  intro h
+  have hp : Nat.Prime 3 := by norm_num
+  have h' : 3 ∣ 2 := hp.dvd_of_dvd_pow h
+  norm_num at h'
+
+/-- Three cannot divide any power of 5. -/
+theorem not_three_dvd_five_pow (n : Nat) : ¬ 3 ∣ 5 ^ n := by
+  intro h
+  have hp : Nat.Prime 3 := by norm_num
+  have h' : 3 ∣ 5 := hp.dvd_of_dvd_pow h
+  norm_num at h'
+
+/-- Five cannot divide any power of 2. -/
+theorem not_five_dvd_two_pow (n : Nat) : ¬ 5 ∣ 2 ^ n := by
+  intro h
+  have hp : Nat.Prime 5 := by norm_num
+  have h' : 5 ∣ 2 := hp.dvd_of_dvd_pow h
+  norm_num at h'
+
+/-- Five cannot divide any power of 3. -/
+theorem not_five_dvd_three_pow (n : Nat) : ¬ 5 ∣ 3 ^ n := by
+  intro h
+  have hp : Nat.Prime 5 := by norm_num
+  have h' : 5 ∣ 3 := hp.dvd_of_dvd_pow h
+  norm_num at h'
+
+/-- The code is divisible by 3 exactly when virtual register 1 is positive. -/
+theorem three_dvd_primeCode_iff (a b c : Nat) :
+    3 ∣ primeCode a b c ↔ 0 < b := by
+  constructor
+  · intro hd
+    by_contra hb
+    have hb0 : b = 0 := by omega
+    have hprod : 3 ∣ 2 ^ a * 5 ^ c := by
+      simpa [primeCode, hb0] using hd
+    have hp : Nat.Prime 3 := by norm_num
+    rcases hp.dvd_mul.mp hprod with h2 | h5
+    · exact not_three_dvd_two_pow a h2
+    · exact not_three_dvd_five_pow c h5
+  · intro hb
+    cases b with
+    | zero => omega
+    | succ n =>
+        refine ⟨2 ^ a * (3 ^ n * 5 ^ c), ?_⟩
+        change 2 ^ a * (3 ^ (n + 1) * 5 ^ c)
+          = 3 * (2 ^ a * (3 ^ n * 5 ^ c))
+        rw [Nat.pow_succ]
+        ac_rfl
+
+/-- The code is divisible by 5 exactly when virtual register 2 is positive. -/
+theorem five_dvd_primeCode_iff (a b c : Nat) :
+    5 ∣ primeCode a b c ↔ 0 < c := by
+  constructor
+  · intro hd
+    by_contra hc
+    have hc0 : c = 0 := by omega
+    have hprod : 5 ∣ 2 ^ a * 3 ^ b := by
+      simpa [primeCode, hc0] using hd
+    have hp : Nat.Prime 5 := by norm_num
+    rcases hp.dvd_mul.mp hprod with h2 | h3
+    · exact not_five_dvd_two_pow a h2
+    · exact not_five_dvd_three_pow b h3
+  · intro hc
+    cases c with
+    | zero => omega
+    | succ n =>
+        refine ⟨2 ^ a * (3 ^ b * 5 ^ n), ?_⟩
+        change 2 ^ a * (3 ^ b * 5 ^ (n + 1))
+          = 5 * (2 ^ a * (3 ^ b * 5 ^ n))
+        rw [Nat.pow_succ]
+        ac_rfl
+
 end Compiler
 end HakuiKoyori
