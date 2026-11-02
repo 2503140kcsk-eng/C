@@ -7,6 +7,7 @@ import HakuiKoyori.LowLevelMacros
 import HakuiKoyori.PrimitiveMacroRuns
 import HakuiKoyori.PrimitiveTransferRuns
 import HakuiKoyori.PrimitiveDivRemRuns
+import HakuiKoyori.EmissionSemantics
 import HakuiKoyori.MacroSemantics
 import HakuiKoyori.BoundarySimulation
 
