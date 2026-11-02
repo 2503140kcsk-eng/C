@@ -1,4 +1,5 @@
 import HakuiKoyori.AssistantMachine
+import Mathlib.Data.Nat.Prime.Basic
 import HakuiKoyori.Simulation
 
 /-!
@@ -205,30 +206,30 @@ theorem two_dvd_primeCode_iff (a b c : Nat) :
 /-- A prime other than 2 cannot divide a power of 2. -/
 theorem not_three_dvd_two_pow (n : Nat) : ¬ 3 ∣ 2 ^ n := by
   intro h
-  have hp : Nat.Prime 3 := by norm_num
+  have hp : Nat.Prime 3 := by decide
   have h' : 3 ∣ 2 := hp.dvd_of_dvd_pow h
-  norm_num at h'
+  exact (by decide : ¬ 3 ∣ 2) h'
 
 /-- Three cannot divide any power of 5. -/
 theorem not_three_dvd_five_pow (n : Nat) : ¬ 3 ∣ 5 ^ n := by
   intro h
-  have hp : Nat.Prime 3 := by norm_num
+  have hp : Nat.Prime 3 := by decide
   have h' : 3 ∣ 5 := hp.dvd_of_dvd_pow h
-  norm_num at h'
+  exact (by decide : ¬ 3 ∣ 5) h'
 
 /-- Five cannot divide any power of 2. -/
 theorem not_five_dvd_two_pow (n : Nat) : ¬ 5 ∣ 2 ^ n := by
   intro h
-  have hp : Nat.Prime 5 := by norm_num
+  have hp : Nat.Prime 5 := by decide
   have h' : 5 ∣ 2 := hp.dvd_of_dvd_pow h
-  norm_num at h'
+  exact (by decide : ¬ 5 ∣ 2) h'
 
 /-- Five cannot divide any power of 3. -/
 theorem not_five_dvd_three_pow (n : Nat) : ¬ 5 ∣ 3 ^ n := by
   intro h
-  have hp : Nat.Prime 5 := by norm_num
+  have hp : Nat.Prime 5 := by decide
   have h' : 5 ∣ 3 := hp.dvd_of_dvd_pow h
-  norm_num at h'
+  exact (by decide : ¬ 5 ∣ 3) h'
 
 /-- The code is divisible by 3 exactly when virtual register 1 is positive. -/
 theorem three_dvd_primeCode_iff (a b c : Nat) :
@@ -239,7 +240,7 @@ theorem three_dvd_primeCode_iff (a b c : Nat) :
     have hb0 : b = 0 := by omega
     have hprod : 3 ∣ 2 ^ a * 5 ^ c := by
       simpa [primeCode, hb0] using hd
-    have hp : Nat.Prime 3 := by norm_num
+    have hp : Nat.Prime 3 := by decide
     rcases hp.dvd_mul.mp hprod with h2 | h5
     · exact not_three_dvd_two_pow a h2
     · exact not_three_dvd_five_pow c h5
@@ -262,7 +263,7 @@ theorem five_dvd_primeCode_iff (a b c : Nat) :
     have hc0 : c = 0 := by omega
     have hprod : 5 ∣ 2 ^ a * 3 ^ b := by
       simpa [primeCode, hc0] using hd
-    have hp : Nat.Prime 5 := by norm_num
+    have hp : Nat.Prime 5 := by decide
     rcases hp.dvd_mul.mp hprod with h2 | h3
     · exact not_five_dvd_two_pow a h2
     · exact not_five_dvd_three_pow b h3
