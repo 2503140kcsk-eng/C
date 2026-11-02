@@ -238,99 +238,121 @@ The compiler proof must establish:
 4. `start` is monotone and injective over valid source PCs;
 5. `start(n)=total`, so source halting corresponds to target fall-off.
 
-## 5. Three-register stack macros for a Turing tape
+## 5. Three-register stack macros for the explicit-current TM model
 
-Let the finite tape alphabet be (\Gamma), with blank (\square).
-Choose (\beta=|\Gamma|+1) and an injective digit map
-(d: \Gamma\to\{1,\ldots,\beta-1\}). Define the stack code, with
-the top at the least-significant digit, by
+The Lean source model in `HakuiKoyori/StackSemantics.lean` is authoritative:
+`TMConfiguration` has fields `state`, `leftStack`, `current`, and
+`rightStack`. The two stack codes contain cells **strictly to the left and
+strictly to the right** of the head. The current cell is the separate
+`current` field. The earlier convention in which the top of `rightStack`
+is also the current cell is rejected; it does not match `turingStep`.
 
-[
- enc([])=0,\qquad enc(s::xs)=d(s)+\beta\,enc(xs).
-]
+Let the finite tape alphabet be `Γ), with blank symbol `□). Choose
+`β = |Γ| + 1` and an injective digit map
+`d : Γ → {0,...,β-1}` such that `d(□)=0` and every nonblank symbol has
+a nonzero digit. For every symbol `s), `d(s)<β). A stack code has its
+nearest cell in the least-significant digit:
 
-A well-formed nonempty stack therefore has remainder (d(s)\ne0) modulo
-(\beta), and its quotient is the code of its tail. The empty stack is
-zero and represents an unvisited infinite blank suffix.
+```text
+enc([])       = 0
+enc(s :: tail) = d(s) + β * enc(tail)
+```
 
-Use three **virtual** registers: L (left stack), R (right stack, whose top is
-the current cell), and T (scratch, zero at every Turing-step boundary). A
-stack macro uses a pair (X,S) of distinct registers, with X as data and S
-as scratch; the remaining register is untouched. Ordinary TM steps use
-S=T. Final output cleanup clears L first, then uses (X,S)=(R,L), leaving
-T available as the unary-output accumulator.
+Thus a stack pop returns `(code mod β, code / β)`; the empty stack pops
+as blank `(0,0)`. The current symbol is not read from either stack.
 
-- `PUSH(X,d(s))`: execute the MUL(β) pattern from Section 2 on (X,S),
-  then execute `inc X` exactly d(s) times. This maps X to β*X_old+d(s)
-  and restores S=0.
-- `POP(X)`: lay out tests `L_j: decJump X,L_(j+1)` for
-  j=0,...,β-1, with L_β the group-loop header. Immediately after each
-  test put the handler `TR(1,0,D_j)` from Section 3, with all its
-  internal labels rebased to that handler's offset. If the test sees zero,
-  it falls through to its handler; if positive, it decrements X and jumps
-  to the next test. At the group header execute `inc S; J_S(L_0)`.
-  Starting from (X,S)=(N,0), after k full groups the invariant is
-  X=N-βk and S=k. The first failed test is j=N mod β, at which point
-  X=0 and S=floor(N/β). Its handler TR(1,0,D_j) transfers only the
-  quotient back to X, then branches to continuation D_j.
-  Therefore it returns (X,S)=(floor(N/β),0), with remainder j
-  held in finite control. For a well-formed nonempty stack j=d(s)≠0;
-  for the empty stack j=0 and the returned symbol is blank.
+Use the virtual register assignment
+`r0 = T` (temporary / final unary-output accumulator),
+`r1 = L` (left stack),
+`r2 = R` (right stack).
+At ordinary simulated TM-step boundaries, `T=0). The program counter
+encodes the pair `(q,a)` consisting of the finite TM state and the current
+symbol. This is possible only for a finite state set and finite alphabet;
+the source specification must therefore be a finite transition table, not
+an arbitrary unconstrained function `Nat → Nat → Option TMAction`.
+The current `TMDelta` Nat-valued API is acceptable only with explicit
+bounds and a well-formedness predicate, or after adding a finite typed
+wrapper. Every transition must write a symbol below `β) and a state below
+the fixed state bound.
 
-The POP handler transfers the quotient for **every** remainder. It is not
-DIVREM from Section 3: that block restores the original data when the
-remainder is nonzero, whereas POP must always replace the stack by its tail.
-For a TM transition ((q,s)\mapsto(q',w,move)), first POP (R) to read
-the current symbol (s); the returned remainder selects the finite
-continuation:
+A stack macro acts on one of `L,R`, using `T` as scratch and restoring
+`T=0) on exit:
 
-- **Stay:** PUSH (R,w).
-- **Right:** PUSH (L,w); (R) is already the old right tail.
-- **Left:** POP (L) to obtain (x) (blank if empty), then PUSH (R,w)
-  followed by PUSH (R,x). Since each push puts its symbol at the top,
-  the new (R) is (x::w::tail(R)), as required.
+- `PUSH(X,d(s))`: multiply `X` by `β) using the fixed-constant
+  multiplication pattern from Section 2, transfer the scratch back, then
+  increment `X` exactly `d(s)` times. This realizes
+  `X := β*X_old + d(s)`.
+- `POP(X)`: use the quotient-group pattern from Section 3 with divisor
+  `β), but choose `TR(1,0,D_j)` for every remainder
+  `j∈{0,...,β-1}`. The selected continuation `D_j) encodes the popped
+  symbol `d^{-1}(j)`; remainder zero denotes blank. It returns
+  `X := X_old / β` and the symbol in finite control. It is not the
+  non-restoring branch of `DIVREM` from Section 3: every remainder must
+  discard the consumed top digit.
 
-These operations leave the unmodified stack unchanged and return (T=0).
-The tape relation is proved by induction on the stack-code equations and the
-three movement cases. The outer POP grouping loop decreases (X) by
-\(\beta\) per completed pass; its quotient-transfer loop decreases (T).
-PUSH has an outer loop decreasing (X), followed by a transfer loop
-decreasing (T). The third register is not touched as data during the
-other-stack operation.
+The transition `(q,a) ↦ (q',b,move)` is implemented from the control
+label `(q,a)`:
 
-## 6. Input/output contract and a necessary correction
+- **Stay:** the new current symbol is `b`; no stack changes. Jump to
+  control label `(q',b)`.
+- **Right:** `PUSH(L,d(b))), then `POP(R)). Its remainder selects the
+  new current symbol `a'`; jump to `(q',a')).
+- **Left:** `PUSH(R,d(b))), then `POP(L)). Its remainder selects the
+  new current symbol `a'`; jump to `(q',a')).
 
-The source TM is fixed to a deterministic one-tape machine over (\Gamma).
-Input (n) is the unary word (1^n) at the head, with blank cells beyond it.
-If (d_1=d(1)), the initial right-stack value is
+This follows the Lean equations exactly: a right move pushes the written
+old-current symbol onto the left stack and pops the right stack; a left move
+pushes the written symbol onto the right stack and pops the left stack.
+The finite-control dispatch must cover every valid pair `(q,a)), and an
+undefined transition is a halting TM state.
 
-[
- \rho(n)=d_1(1+\beta+\cdots+\beta^{n-1}),\qquad \rho(0)=0.
-]
+The source TM must be finite: represent states and symbols by finite types
+(or natural-number codes bounded by fixed state/alphabet sizes), and prove
+that every transition preserves those bounds. Without this finiteness
+condition, an arbitrary `TMDelta` can encode an infinite, non-effective
+transition function and cannot be compiled to a finite instruction list.
 
-The left stack and scratch are zero, so the target input is
+## 6. Input/output contract and bootstrap
 
-[
- inputCode(n)=primeCode(0,\rho(n),0)=3^{\rho(n)}.
-]
+The source TM is deterministic, one-tape, and has a finite alphabet and
+finite state set. Its Lean configuration stores the current symbol separately
+from both side-stacks.
 
-A halting source TM is required to leave (1^v) beginning at the current
-head cell, followed immediately by blank. The Stage-A cleanup first clears
-the left stack, then scans (R) with POP using (L) as scratch, increments
-(r0) for each leading symbol (1), and stops at the first blank (or
-empty stack). It clears the remaining (R) and leaves the virtual registers
-((r0,r1,r2)=(v,0,0)). It therefore establishes the exact target
-representation (primeCode(v,0,0)=2^v).
+The target's initial input code contains the entire unary word in the right
+stack, including the head cell. With `d₁=d(1)`,
 
-**Correction to the earlier M2 plan:** the proposed target-side routine
-"repeatedly divide the prime code by 2 while incrementing the other physical
-counter, then transfer that counter as the raw output (v)" is not justified
-by the two-counter quotient block: the second counter is simultaneously
-needed as quotient scratch and as the persistent output accumulator. No
-such macro is present in the current source, and it must not be claimed.
+```text
+ρ(n) = d₁ * (1 + β + ... + β^(n-1)),  ρ(0)=0
+```
 
-The verified compiler contract should instead make the output representation
-explicit:
+and the initial virtual registers are `(T,L,R)=(0,0,ρ(n))). The compiler
+entry block first executes `POP(R)). For `n=0`, it obtains blank and an
+empty right stack; for `n>0`, it obtains symbol `1` and leaves the
+remaining `n-1` symbols in `R). The returned symbol is encoded in the
+finite-control program counter, yielding the Lean source configuration
+`(q₀, 0, current, tail)`. Under the assignment `(r0,r1,r2)=(T,L,R)`,
+the exact M1 input code is
+
+```text
+inputCode(n) = primeCode(0, 0, ρ(n)) = 5^(ρ(n)).
+```
+
+This bootstrap is mandatory: the initial M1 configuration has program
+counter zero and cannot directly encode an input-dependent current symbol
+in its control state.
+
+A halting TM is required to leave the unary result `1^v` beginning at the
+current head cell and followed immediately by blank. The cleanup block
+knows the current symbol from its `(q,a)` control label. It first adds one
+to `T` iff the current symbol is `1`; if the current symbol is blank, it
+adds zero. It then scans `R) with `POP(R)), using `L` as scratch while
+preserving `T), adding one to `T` for each leading `1), and stopping at
+the first blank. A nonblank symbol other than `1` before that blank violates
+the output precondition. Finally it clears `L` and `R), leaving
+`(T,L,R)=(v,0,0)). Stage B therefore produces the exact output code
+`primeCode(v,0,0)=2^v).
+
+The verified compiler contract must make the output representation explicit:
 
 ```text
 OutputCode(v) := 2^v
@@ -341,12 +363,11 @@ AssistantMachine.HaltsWithOutput
   (compileTM M) (inputCode(n)) (OutputCode(v))
 ```
 
-The decoder is specified by the relation (OutputRep(v,z)\iff z=2^v);
-injectivity of powers of two gives uniqueness of the decoded (v).
-This is exact value preservation under a stated codec, not the stronger
-claim that the physical left counter itself equals (v). If raw-counter
-output is later required, it needs a separate two-counter normalization
-program and a new proof; it is not part of this milestone.
+The decoder relation is `OutputRep(v,z) iff z=2^v); injectivity of powers
+of two gives uniqueness of the decoded `v`. This is exact value
+preservation under a stated codec, not the stronger claim that the physical
+left counter itself equals `v`. A raw-counter normalizer remains a
+separate theorem and is not part of this milestone.
 
 ## 7. Concrete simulation and divergence theorems
 
