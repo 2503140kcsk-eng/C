@@ -134,8 +134,13 @@ After the last test/handler pair, append:
 
 ```text
 L_group:     inc B
-             J_B(L_0)
+             J_B(MacroStart)
 ```
+
+The group-loop jump is deliberately the non-rebased macro-origin label. A
+plain local offset would be shifted together with the recursive suffix and
+could incorrectly jump back to the group-loop itself, causing a nonterminating
+loop at A=0.
 
 The handler `H_j` is physically the instruction sequence immediately
 following `L_j`. Hence when (A=0), `decJump A,L_(j+1)` falls directly
@@ -191,7 +196,7 @@ exponent case takes (D_{div}) and changes (N) to (N/p_i).
 Do not bake guessed global addresses into a block. Use a template target type:
 
 ```text
-Target := Local(offset) | Source(pc)
+Target := Local(offset) | MacroStart | Source(pc)
 TemplateInstruction :=
     Inc(counter)
   | DecJump(counter, Target)
@@ -216,6 +221,13 @@ Thus every out-of-range source jump goes to (total), the unique
 fall-off/halt location. Flatten the relocated (B_0,\ldots,B_{n-1})
 in source order. The internal labels in `MUL`/`DIVREM` are local offsets;
 only their designated exits are `Source(q)` targets.
+
+`Local(k)` is relative to the current nested block and is shifted by its
+embedding offset. `MacroStart` always denotes the entry of the enclosing
+arithmetic macro and is never shifted; it is needed for the quotient-group
+loop, whose back-edge must return to the first residue test rather than to
+the final group-loop block. `Source(q)` is external and is resolved only
+after all top-level block lengths are known.
 
 The compiler proof must establish:
 
