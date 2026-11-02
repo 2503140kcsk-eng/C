@@ -111,7 +111,7 @@ theorem finiteTMStep_none_iff
   cases h : M.transition c.state c.current with
   | none => simp [finiteTMStep, h]
   | some action =>
-      cases action.move <;> simp [finiteTMStep, h]
+      cases hm : action.move <;> simp [finiteTMStep, h, hm]
 
 /--
 Commuting theorem: erase the Fin proofs before or after one step and the
