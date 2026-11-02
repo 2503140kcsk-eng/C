@@ -4,6 +4,7 @@ import HakuiKoyori.FiniteTM
 import HakuiKoyori.Simulation
 import HakuiKoyori.CompilerCore
 import HakuiKoyori.LowLevelMacros
+import HakuiKoyori.PrimitiveMacroRuns
 
 import HakuiKoyori.MacroSemantics
 import HakuiKoyori.BoundarySimulation
@@ -210,4 +211,3 @@ theorem hakuiKoyoriNumber1_dominates_bounded_machine_catalogue
 
 end HakuiKoyori
 
-import HakuiKoyori.PrimitiveMacroRuns
