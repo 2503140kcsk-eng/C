@@ -5,7 +5,9 @@
 This document freezes the intended proof architecture for a value-preserving
 compiler into the existing HakuiKoyori.AssistantMachine two-counter ISA.
 It is deliberately explicit about the gap between arithmetic identities and
-an actual generated low-level program.
+an actual generated low-level program. The exact local instruction templates,
+termination variants, label relocation, stack macros, and corrected output
+codec are specified in [M2_LOW_LEVEL_MACROS.md](M2_LOW_LEVEL_MACROS.md).
 
 ## 1. Correctness contract
 
@@ -15,7 +17,8 @@ and target machine T = compile(S), the intended contract is:
 
 - **Termination preservation:** S halts on n iff T halts on the encoded input.
 - **Value preservation:** if S halts on n with result v, then T halts with
-  the same natural-number result v in the designated left output counter.
+  the explicit output code `OutputCode(v)` in the designated left counter;
+  the codec/decoder relation must recover the unique source value v.
 - **Trace preservation:** if source transitions emit observable labels,
   the target emits the same label sequence; internal compiler steps emit
   the empty label.
@@ -152,8 +155,9 @@ blocks and their universal simulation theorem must still be proved in Lean.
 ### Stage C: output restoration and the composite theorem
 
 A final output convention must be fixed before claiming a value-preserving
-TM compiler. The preferred convention is unary output on the source tape,
-decoded by a proved final macro into the target's left counter. The target
+TM compiler. This branch uses unary output on the source tape and the explicit
+target output code `OutputCode(v) = 2^v`. A raw-counter normalizer from
+`2^v` to `v` is a separate optional theorem and is not claimed. The target
 must finish with its right scratch counter zero.
 
 Then prove, in order:
@@ -205,7 +209,7 @@ are still unimplemented.
 The intended final theorem has the shape
 
 `TMHaltsWithUnaryOutput M n v ↔ AssistantMachine.HaltsWithOutput
-  (compileTM M) (inputCode n) v`.
+  (compileTM M) (inputCode n) (2^v)`.
 
 This fixes the source model, input encoding, output convention, and observable
 value before claiming semantic preservation.
