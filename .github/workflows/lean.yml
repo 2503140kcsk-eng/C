@@ -40,5 +40,7 @@ jobs:
         run: lake env lean HakuiKoyori.lean
       - name: Check machine formalization
         run: lake env lean HakuiKoyori/AssistantMachine.lean
+      - name: Check simulation infrastructure
+        run: lake env lean HakuiKoyori/Simulation.lean
       - name: Check compiler foundations
         run: lake env lean HakuiKoyori/CompilerCore.lean
