@@ -22,8 +22,8 @@ def emitBlocksFrom (whole : List TemplateBlock) :
     Nat → List TemplateBlock → List Instruction
   | _, [] => []
   | pc, block :: rest =>
-      block.map (relocateInstruction whole (blockStart whole pc)) ++
-        emitBlocksFrom whole (pc + 1) rest
+      (block.map (relocateInstruction whole (blockStart whole pc)) : List Instruction) ++
+        (emitBlocksFrom whole (pc + 1) rest : List Instruction)
 
 /-- The enumerate/flatMap emitter is extensionally the recursive emitter. -/
 theorem enumerateBlocks_flatMap_eq (whole : List TemplateBlock) :
@@ -45,7 +45,7 @@ theorem enumerateBlocks_flatMap_eq (whole : List TemplateBlock) :
 theorem emitBlocks_eq_emitBlocksFrom (blocks : List TemplateBlock) :
     emitBlocks blocks = emitBlocksFrom blocks 0 blocks := by
   unfold emitBlocks
-  exact enumerateBlocks_flatMap_eq blocks 0
+  exact enumerateBlocks_flatMap_eq blocks blocks 0
 
 /--
 Lookup in a recursively flattened suffix: a valid instruction at offset j
@@ -82,7 +82,7 @@ theorem emitBlocksFrom_lookup (whole : List TemplateBlock) (start : Nat) :
             simpa using hblock
           have hpc : start + (i + 1) = (start + 1) + i := by omega
           simp only [emitBlocksFrom, prefixLength]
-          rw [List.getElem?_append_right (by simp [List.length_map]; omega)]
+          rw [List.getElem?_append_right (by omega)]
           have h := ih (start + 1) i block j hblock' hj
           simpa [hpc, Nat.add_assoc] using h
 
