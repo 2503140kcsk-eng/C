@@ -115,3 +115,133 @@ theorem forwardSimulation_compose_explicit
     (simBC : ForwardSimulation stepB stepC relBC) :
     ForwardSimulation stepA stepC (ComposeRelation relAB relBC) := by
   exact forwardSimulation_compose simAB simBC
+
+namespace StepPlus
+
+/-- A nonempty finite run always begins with an actual transition. -/
+theorem firstStep {α : Type u} {step : α → Option α} {a b : α}
+    (h : StepPlus step a b) : ∃ c, step a = some c := by
+  induction h with
+  | one hstep => exact ⟨_, hstep⟩
+  | tail hprefix hstep ih => exact ih
+
+end StepPlus
+
+/--
+Backward simulation: each target transition is matched by a possibly empty
+finite source run and preserves the relation. Empty source progress accounts
+for internal target steps.
+-/
+def BackwardSimulation {S : Type u} {T : Type v}
+    (sourceStep : S → Option S) (targetStep : T → Option T)
+    (rel : S → T → Prop) : Prop :=
+  ∀ ⦃s t t'⦄, rel s t → targetStep t = some t' →
+    ∃ s', StepStar sourceStep s s' ∧ rel s' t'
+
+/-- Lift backward simulation from one target step to a finite target run. -/
+theorem backwardSimulation_preservesStar
+    {S : Type u} {T : Type v}
+    {sourceStep : S → Option S} {targetStep : T → Option T}
+    {rel : S → T → Prop}
+    (sim : BackwardSimulation sourceStep targetStep rel) :
+    ∀ ⦃s t t'⦄, rel s t → StepStar targetStep t t' →
+      ∃ s', StepStar sourceStep s s' ∧ rel s' t' := by
+  intro s t t' hrel hrun
+  induction hrun generalizing s with
+  | refl t =>
+      exact ⟨s, StepStar.refl s, hrel⟩
+  | tail hprefix hstep ih =>
+      obtain ⟨s₁, hsource₁, hrel₁⟩ := ih hrel
+      obtain ⟨s₂, hsource₂, hrel₂⟩ := sim hrel₁ hstep
+      exact ⟨s₂, StepStar.trans hsource₁ hsource₂, hrel₂⟩
+
+/-- A related source terminal state must correspond to a target terminal state. -/
+def TerminalReflecting {S : Type u} {T : Type v}
+    (sourceStep : S → Option S) (targetStep : T → Option T)
+    (rel : S → T → Prop) : Prop :=
+  ∀ ⦃s t⦄, rel s t → sourceStep s = none → targetStep t = none
+
+/--
+At related macro-boundary states, forward simulation plus terminal reflection
+makes halting status equivalent. Forward progress rules out a target halt
+while the source still has a step.
+-/
+theorem forwardSimulation_terminal_iff
+    {S : Type u} {T : Type v}
+    {sourceStep : S → Option S} {targetStep : T → Option T}
+    {rel : S → T → Prop}
+    (sim : ForwardSimulation sourceStep targetStep rel)
+    (terminal : TerminalReflecting sourceStep targetStep rel) :
+    ∀ ⦃s t⦄, rel s t → (sourceStep s = none ↔ targetStep t = none) := by
+  intro s t hrel
+  constructor
+  · exact terminal hrel
+  · intro ht
+    by_contra hs
+    cases hsource : sourceStep s with
+    | none => exact hs hsource
+    | some s' =>
+        obtain ⟨t', hrun, hrel'⟩ := sim hrel hsource
+        obtain ⟨t₁, hfirst⟩ := StepPlus.firstStep hrun
+        simp [ht] at hfirst
+
+/-- A finite run ending in a terminal state with a specified observable value. -/
+def TerminatesWithOutput {α : Type u}
+    (step : α → Option α) (output : α → Nat) (start : α) (value : Nat) : Prop :=
+  ∃ final, StepStar step start final ∧ step final = none ∧ output final = value
+
+/--
+The observable output agrees at related terminal states. The source terminal
+premise is sufficient because TerminalReflecting supplies target termination.
+-/
+def TerminalOutputCompatible {S : Type u} {T : Type v}
+    (sourceStep : S → Option S) (rel : S → T → Prop)
+    (sourceOutput : S → Nat) (targetOutput : T → Nat) : Prop :=
+  ∀ ⦃s t⦄, rel s t → sourceStep s = none →
+    sourceOutput s = targetOutput t
+
+/--
+Full finite termination-and-value preservation from paired simulations.
+
+The forward pass transports a terminating source run to the target. The
+backward pass transports any terminating target run back to the source.
+Terminal reflection aligns the stopping points, and output compatibility
+equates their observable natural-number results.
+
+This theorem is generic: a concrete compiler must still prove both simulation
+premises, terminal reflection, and output compatibility for its own code.
+-/
+theorem simulations_terminatesWithOutput_iff
+    {S : Type u} {T : Type v}
+    {sourceStep : S → Option S} {targetStep : T → Option T}
+    {rel : S → T → Prop}
+    {sourceOutput : S → Nat} {targetOutput : T → Nat}
+    (forward : ForwardSimulation sourceStep targetStep rel)
+    (backward : BackwardSimulation sourceStep targetStep rel)
+    (terminal : TerminalReflecting sourceStep targetStep rel)
+    (outputCompatible :
+      TerminalOutputCompatible sourceStep rel sourceOutput targetOutput) :
+    ∀ ⦃s t value⦄, rel s t →
+      (TerminatesWithOutput sourceStep sourceOutput s value ↔
+       TerminatesWithOutput targetStep targetOutput t value) := by
+  intro s t value hrel
+  constructor
+  · rintro ⟨sourceFinal, hsourceRun, hsourceHalt, hsourceOutput⟩
+    obtain ⟨targetFinal, htargetRun, hfinalRel⟩ :=
+      forwardSimulation_preservesStar forward hrel hsourceRun
+    have htargetHalt := terminal hfinalRel hsourceHalt
+    have houtputs := outputCompatible hfinalRel hsourceHalt
+    refine ⟨targetFinal, htargetRun, htargetHalt, ?_⟩
+    rw [← houtputs]
+    exact hsourceOutput
+  · rintro ⟨targetFinal, htargetRun, htargetHalt, htargetOutput⟩
+    obtain ⟨sourceFinal, hsourceRun, hfinalRel⟩ :=
+      backwardSimulation_preservesStar backward hrel htargetRun
+    have hsourceHalt :
+        sourceStep sourceFinal = none :=
+      (forwardSimulation_terminal_iff forward terminal hfinalRel).mpr htargetHalt
+    have houtputs := outputCompatible hfinalRel hsourceHalt
+    refine ⟨sourceFinal, hsourceRun, hsourceHalt, ?_⟩
+    rw [houtputs]
+    exact htargetOutput
+
