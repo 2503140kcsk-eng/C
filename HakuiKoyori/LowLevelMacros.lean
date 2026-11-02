@@ -21,7 +21,11 @@ open AssistantMachine
 
 /-- A jump destination before final whole-program relocation. -/
 inductive JumpTarget where
+  /-- Offset relative to the current nested block. -/
   | offset (index : Nat)
+  /-- Entry address of the enclosing arithmetic macro (not rebased). -/
+  | blockStart
+  /-- Entry address of a source three-register instruction block. -/
   | sourcePC (pc : Nat)
 deriving DecidableEq, Repr
 
@@ -36,6 +40,7 @@ abbrev TemplateBlock := List TemplateInstruction
 /-- Rebase only labels internal to a nested block. -/
 def rebaseTarget (base : Nat) : JumpTarget → JumpTarget
   | .offset k => .offset (base + k)
+  | .blockStart => .blockStart
   | .sourcePC pc => .sourcePC pc
 
 /-- Rebase one instruction while preserving external source labels. -/
@@ -111,7 +116,7 @@ block is rebased before concatenation.
 def divRemAux (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
     Nat → Nat → TemplateBlock
   | 0, _ =>
-      [.inc .right, .inc .right, .decJump .right (.offset 0)]
+      [.inc .right, .inc .right, .decJump .right .blockStart]
   | fuel + 1, residue =>
       let multiplier := if residue = 0 then 1 else p
       let destination := if residue = 0 then destinationDiv else destinationNondiv
@@ -143,6 +148,7 @@ def blocksLength (blocks : List TemplateBlock) : Nat :=
 def resolveTarget (blocks : List TemplateBlock) (base : Nat) (target : JumpTarget) : Nat :=
   match target with
   | .offset k => base + k
+  | .blockStart => base
   | .sourcePC pc =>
       if pc < blocks.length then blockStart blocks pc else blocksLength blocks
 
