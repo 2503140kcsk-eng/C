@@ -93,8 +93,7 @@ theorem concreteTR_zero_entry
     AssistantMachine.step (concreteTR m r destination)
       ⟨0, a, 0⟩ = some ⟨1, a, 0⟩ := by
   rw [concreteTR_eq]
-  simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC]
+  simp [AssistantMachine.step, AssistantMachine.readCounter, AssistantMachine.setPC]
 
 /-- The r-increment remainder segment occupies positions 1 through r. -/
 theorem concreteTR_remainder_get
