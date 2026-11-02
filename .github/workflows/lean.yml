@@ -48,3 +48,5 @@ jobs:
         run: lake env lean HakuiKoyori/LowLevelMacros.lean
       - name: Check MUL and TR macro semantics
         run: lake env lean HakuiKoyori/MacroSemantics.lean
+      - name: Check TM stack arithmetic semantics
+        run: lake env lean HakuiKoyori/StackSemantics.lean
