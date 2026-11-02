@@ -552,24 +552,64 @@ The listed GitHub projects are public research resources, not autonomous agents
 that have been run or coordinated in this chat. Do not report a tool as having
 executed merely because its repository was inspected.
 
-## 9. Current verification boundary
+## 9. Current verification boundary (2026-11-03)
 
-The existing M2 PR head before this document had a successful GitHub Actions
-run (run ID `41395159595`), including the pinned build, configured axiom
-audit, and direct checks of the four then-existing Lean files. That run
-certifies only those files at that exact commit. It does **not** certify the
-macro blocks in this design document.
+The current branch head is
+`a3613a9db1685588bbcda86e321ccd010d6416ff`. Its pinned GitHub Actions
+run is #154 / ID `41485271673` and was still in progress when this
+section was written. Earlier runs on this branch failed; therefore no
+green status is claimed for this head.
 
-Until the theorem targets in Section 7 are implemented and the new PR head
-passes the full kernel build and axiom audit, the status remains:
+The verified and implemented boundary is:
+
+| Component | Current state | What the evidence establishes |
+|---|---|---|
+| `CompilerCore.lean` | Lean declarations present | Three-register IR, prime-power arithmetic, divisibility zero tests |
+| `MacroSemantics.lean` | Lean declarations present | Abstract `MUL`, `TR`, `DIVREM` loop equations and variant arguments |
+| `BoundarySimulation.lean` | Lean declarations present | Arithmetic macro-boundary refinement for one virtual instruction |
+| `LowLevelMacros.lean` | Generator declarations present | Literal templates, rebasing, prefix addresses, and whole-program emitter |
+| `PrimitiveMacroRuns.lean` | Literal `MUL` proof under CI repair | The intended theorem executes the actual `mulBlock` list using `AssistantMachine.step`; the current proof file still needs a green build |
+| `StackSemantics.lean` | Lean declarations present | Base-`β` stack push/pop inverse and explicit-current TM step semantics |
+| `FiniteTM.lean` | Typed TM plus unary input/bootstrap declarations added | Finite state/alphabet model, compatibility with the Nat semantics, explicit current-cell input representation; fresh CI verification still required |
+| TM-to-3-register compiler | Not implemented as a verified finite code generator | PUSH/POP bodies, finite dispatch, initialization/cleanup are still obligations |
+| 3-register-to-2-counter concrete simulation | Not proved | No theorem yet connects `compileProgram3` to primitive target runs for all programs |
+| Final TM-to-M1 contract | Not proved | Halting equivalence, exact output codec, and divergence equivalence remain open |
+| Final pinned build + axiom audit | Not passed on the current head | A previous green run applies only to its exact earlier commit |
+
+The current concrete MUL proof repair is still in progress. Earlier CI logs
+identified reserved-identifier parsing and list-index arithmetic failures;
+the current source makes the prefix and replicate lengths explicit. Until
+run #154 or a later run passes on the exact current head, it is not counted
+as kernel-checked. The earlier failed logs are retained as development
+evidence, not proof.
+
+The newly added unary input contract fixes the documentation mismatch:
+the current head cell is explicit, the right stack contains only cells to
+the right of the head, and the startup scratch exponent records whether the
+input is empty or nonempty. The bootstrap is a three-register intermediate
+instruction and must itself be compiled by the prime-power backend; it is
+not a raw decrement of the physical M1 counter.
+
+The exact exit conditions remain those listed in Section 7. In particular,
+a theorem about the abstract `DIVREM` function is not a theorem about the
+literal `divRemBlock` instruction list, and address arithmetic lemmas are
+not a theorem that `emitBlocks` preserves execution.
+
+Current status:
 
 ```text
-M2_FOUNDATIONS_CI = PASS (for commit 0a0b30eb48a0de2b58bb891870386bccf95a9d91)
-LOW_LEVEL_MACROS_LEAN = NOT_IMPLEMENTED
-COMPILER_CORRECTNESS = NOT_PROVED
-TM_OUTPUT_CODEC_THEOREM = NOT_PROVED
-DIVERGENCE_PRESERVATION = NOT_PROVED
-RELEASE = BLOCKED
+M2_PRIME_POWER_ARITHMETIC = IMPLEMENTED
+M2_ABSTRACT_MACRO_SEMANTICS = IMPLEMENTED
+M2_MACRO_BOUNDARY_SIMULATION = IMPLEMENTED
+M2_LITERAL_MUL_EXECUTION = UNDER_CI_REPAIR
+M2_LITERAL_TR_EXECUTION = NOT_PROVED
+M2_LITERAL_DIVREM_EXECUTION = NOT_PROVED
+M2_RELOCATION_EXECUTION_CORRECTNESS = NOT_PROVED
+M2_TM_TO_3_REGISTER_COMPILER = NOT_IMPLEMENTED
+M2_COMPOSED_HALTING_OUTPUT_DIVERGENCE = NOT_PROVED
+M2_FINAL_PINNED_BUILD_AND_AXIOM_AUDIT = NOT_PASSED
+M2_RELEASE = BLOCKED
+M3 = NOT_STARTED
 ```
 
 ## References
