@@ -1,5 +1,8 @@
-import HakuiKoyori.AssistantMachine
-import Mathlib.Data.Nat.Prime.Basic
+module
+
+public import HakuiKoyori.AssistantMachine
+public import Mathlib.Data.Nat.Prime.Basic
+public import Mathlib.Tactic.Ring
 
 /-!
 # Compiler foundations (M2)
@@ -116,7 +119,7 @@ theorem primeCode_inc_r0 (a b c : Nat) :
   change 2 ^ (a + 1) * (3 ^ b * 5 ^ c)
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 2
   rw [Nat.pow_succ]
-  ac_rfl
+  ring
 
 /-- Incrementing virtual register 1 multiplies the code by 3. -/
 theorem primeCode_inc_r1 (a b c : Nat) :
@@ -124,7 +127,7 @@ theorem primeCode_inc_r1 (a b c : Nat) :
   change 2 ^ a * (3 ^ (b + 1) * 5 ^ c)
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 3
   rw [Nat.pow_succ]
-  ac_rfl
+  ring
 
 /-- Incrementing virtual register 2 multiplies the code by 5. -/
 theorem primeCode_inc_r2 (a b c : Nat) :
@@ -132,7 +135,7 @@ theorem primeCode_inc_r2 (a b c : Nat) :
   change 2 ^ a * (3 ^ b * 5 ^ (c + 1))
     = (2 ^ a * (3 ^ b * 5 ^ c)) * 5
   rw [Nat.pow_succ]
-  ac_rfl
+  ring
 
 /-- Decrementing a positive virtual register 0 divides its code by 2. -/
 theorem primeCode_dec_r0 {a b c : Nat} (h : 0 < a) :
@@ -199,7 +202,7 @@ theorem two_dvd_primeCode_iff (a b c : Nat) :
         change 2 ^ (n + 1) * (3 ^ b * 5 ^ c)
           = 2 * (2 ^ n * (3 ^ b * 5 ^ c))
         rw [Nat.pow_succ]
-        ac_rfl
+        ring
 
 
 /-- A prime other than 2 cannot divide a power of 2. -/
@@ -251,7 +254,7 @@ theorem three_dvd_primeCode_iff (a b c : Nat) :
         change 2 ^ a * (3 ^ (n + 1) * 5 ^ c)
           = 3 * (2 ^ a * (3 ^ n * 5 ^ c))
         rw [Nat.pow_succ]
-        ac_rfl
+        ring
 
 /-- The code is divisible by 5 exactly when virtual register 2 is positive. -/
 theorem five_dvd_primeCode_iff (a b c : Nat) :
@@ -274,7 +277,7 @@ theorem five_dvd_primeCode_iff (a b c : Nat) :
         change 2 ^ a * (3 ^ b * 5 ^ (n + 1))
           = 5 * (2 ^ a * (3 ^ b * 5 ^ n))
         rw [Nat.pow_succ]
-        ac_rfl
+        ring
 
 end Compiler
 end HakuiKoyori
