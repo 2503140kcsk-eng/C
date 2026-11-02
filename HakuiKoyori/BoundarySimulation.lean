@@ -60,22 +60,25 @@ theorem primeCode_write3_dec_div (regs : Registers3) (which : Register3)
   | r0 =>
       have hdec := primeCode_dec_r0 (a := regs.r0) (b := regs.r1)
         (c := regs.r2) (by simpa [read3] using hpositive)
-      rw [regsCode, regsCode]
-      rw [hdec, Nat.mul_div_right]
+      change primeCode (regs.r0 - 1) regs.r1 regs.r2 =
+        primeCode regs.r0 regs.r1 regs.r2 / 2
+      rw [hdec, Nat.mul_div_left]
       · rfl
       · decide
   | r1 =>
       have hdec := primeCode_dec_r1 (a := regs.r0) (b := regs.r1)
         (c := regs.r2) (by simpa [read3] using hpositive)
-      rw [regsCode, regsCode]
-      rw [hdec, Nat.mul_div_right]
+      change primeCode regs.r0 (regs.r1 - 1) regs.r2 =
+        primeCode regs.r0 regs.r1 regs.r2 / 3
+      rw [hdec, Nat.mul_div_left]
       · rfl
       · decide
   | r2 =>
       have hdec := primeCode_dec_r2 (a := regs.r0) (b := regs.r1)
         (c := regs.r2) (by simpa [read3] using hpositive)
-      rw [regsCode, regsCode]
-      rw [hdec, Nat.mul_div_right]
+      change primeCode regs.r0 regs.r1 (regs.r2 - 1) =
+        primeCode regs.r0 regs.r1 regs.r2 / 5
+      rw [hdec, Nat.mul_div_left]
       · rfl
       · decide
 
@@ -106,6 +109,7 @@ theorem MUL_compiles_inc (regs : Registers3) (which : Register3) :
     MUL (registerPrime which) (regsCode regs) =
       (regsCode (write3 regs which (read3 regs which + 1)), 0) := by
   rw [MUL_correct, primeCode_write3_inc]
+  simp [Nat.mul_comm]
 
 /--
 The arithmetic macro implementing a source conditional decrement has the
