@@ -75,6 +75,7 @@ structure Configuration3 where
 deriving DecidableEq, Repr
 
 /-- Set the intermediate program counter. -/
+@[expose]
 def setPC3 (c : Configuration3) (next : Nat) : Configuration3 :=
   { c with pc := next }
 
