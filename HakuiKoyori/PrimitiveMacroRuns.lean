@@ -20,7 +20,6 @@ open AssistantMachine
 
 /-- Execute exactly n primitive transitions, provided all exist. -/
 @[expose]
-@[expose]
 def runN : Nat → Program → Configuration → Option Configuration
   | 0, _, configuration => some configuration
   | n + 1, program, configuration =>
