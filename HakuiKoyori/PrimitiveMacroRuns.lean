@@ -31,10 +31,7 @@ theorem runN_add (n m : Nat) (program : Program) (configuration : Configuration)
   induction n generalizing configuration with
   | zero => simp [runN]
   | succ n ih =>
-      cases hstep : AssistantMachine.step program configuration with
-      | none => simp [runN, hstep]
-      | some middle =>
-          simp [runN, hstep, ih]
+      simp [runN, Nat.succ_add, ih, Option.bind_assoc]
 
 /-- Materialize one symbolic MUL block as an M1 instruction list. -/
 def concreteMUL (factor destination : Nat) : Program :=
@@ -76,30 +73,36 @@ theorem concreteMUL_replicate_step
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + i, data, scratch⟩ =
       some ⟨7 + i + 1, data, scratch + 1⟩ := by
-  rw [concreteMUL_eq]
-  simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
-    List.getElem?_replicate, hi]
+  rw [AssistantMachine.step, concreteMUL_eq]
+  rw [List.getElem?_append_right (by simp)]
+  have hidx : 7 + i - 7 = i := by omega
+  rw [hidx, List.getElem?_append_left hi]
+  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
+    AssistantMachine.setPC]
 
 theorem concreteMUL_identity_first
     (factor destination data scratch : Nat) :
     AssistantMachine.step (concreteMUL factor destination)
       ⟨7 + factor, data, scratch⟩ =
       some ⟨8 + factor, data, scratch + 1⟩ := by
-  rw [concreteMUL_eq]
-  simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
-    List.getElem?_replicate]
+  rw [AssistantMachine.step, concreteMUL_eq]
+  rw [List.getElem?_append_right (by simp)]
+  have hidx : 7 + factor - 7 = factor := by omega
+  rw [hidx, List.getElem?_append_right (by simp)]
+  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
+    AssistantMachine.setPC]
 
 theorem concreteMUL_identity_second
     (factor destination data scratch : Nat) :
     AssistantMachine.step (concreteMUL factor destination)
       ⟨8 + factor, data, scratch + 1⟩ =
       some ⟨0, data, scratch⟩ := by
-  rw [concreteMUL_eq]
-  simp [AssistantMachine.step, AssistantMachine.readCounter,
-    AssistantMachine.writeCounter, AssistantMachine.setPC, List.getElem?_append,
-    List.getElem?_replicate]
+  rw [AssistantMachine.step, concreteMUL_eq]
+  rw [List.getElem?_append_right (by simp)]
+  have hidx : 8 + factor - 7 = factor + 1 := by omega
+  rw [hidx, List.getElem?_append_right (by omega)]
+  simp [AssistantMachine.readCounter, AssistantMachine.writeCounter,
+    AssistantMachine.setPC]
 
 theorem concreteMUL_replicate_run
     (factor destination i fuel data scratch : Nat)
@@ -114,7 +117,7 @@ theorem concreteMUL_replicate_run
       have hrest : (i + 1) + fuel ≤ factor := by omega
       simp only [runN]
       rw [concreteMUL_replicate_step factor destination i data scratch hi]
-      simpa [Nat.add_assoc] using
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
         ih (i + 1) data (scratch + 1) hrest
 
 theorem concreteMUL_outer_round
@@ -168,9 +171,21 @@ theorem concreteMUL_outer_loop
       have hcount :
           (input + 1) * (factor + 3) =
             (factor + 3) + input * (factor + 3) := by ring
-      rw [hcount, runN_add]
-      simp [hround, hrest, Nat.mul_add, Nat.add_assoc,
-        Nat.add_comm, Nat.add_left_comm]
+      calc
+        runN ((input + 1) * (factor + 3)) (concreteMUL factor destination)
+            ⟨0, input + 1, scratch⟩ =
+          (runN (factor + 3) (concreteMUL factor destination)
+              ⟨0, input + 1, scratch⟩).bind
+            (fun middle => runN (input * (factor + 3))
+              (concreteMUL factor destination) middle) := by
+                rw [hcount]
+                exact runN_add (factor + 3) (input * (factor + 3))
+                  (concreteMUL factor destination) ⟨0, input + 1, scratch⟩
+        _ = runN (input * (factor + 3)) (concreteMUL factor destination)
+              ⟨0, input, scratch + factor⟩ := by simp [hround]
+        _ = some ⟨0, 0, scratch + factor + factor * input⟩ := hrest
+        _ = some ⟨0, 0, scratch + factor * (input + 1)⟩ := by
+              congr 2 <;> ring
 
 theorem concreteMUL_transfer_test
     (factor destination data scratch : Nat) :
@@ -223,8 +238,21 @@ theorem concreteMUL_transfer_loop
       have hround := concreteMUL_transfer_round factor destination data scratch
       have hrest := ih (data + 1)
       have hcount : 4 * (scratch + 1) = 4 + 4 * scratch := by omega
-      rw [hcount, runN_add]
-      simp [hround, hrest, Nat.add_assoc]
+      calc
+        runN (4 * (scratch + 1)) (concreteMUL factor destination)
+            ⟨1, data, scratch + 1⟩ =
+          (runN 4 (concreteMUL factor destination)
+              ⟨1, data, scratch + 1⟩).bind
+            (fun middle => runN (4 * scratch)
+              (concreteMUL factor destination) middle) := by
+                rw [hcount]
+                exact runN_add 4 (4 * scratch) (concreteMUL factor destination)
+                  ⟨1, data, scratch + 1⟩
+        _ = runN (4 * scratch) (concreteMUL factor destination)
+              ⟨1, data + 1, scratch⟩ := by simp [hround]
+        _ = some ⟨1, data + 1 + scratch, 0⟩ := hrest
+        _ = some ⟨1, data + (scratch + 1), 0⟩ := by
+              congr 2 <;> omega
 
 theorem concreteMUL_exit_zero
     (factor destination data : Nat) :
@@ -243,6 +271,7 @@ theorem concreteMUL_exit
     AssistantMachine.setPC, concreteMUL_eq]
 
 /-- All-input primitive correctness of the literal generated MUL block. -/
+/-- All-input primitive correctness of the literal generated MUL block. -/
 theorem concreteMUL_correct_run
     (factor destination input : Nat) :
     runN (input * (5 * factor + 3) + 4)
@@ -260,12 +289,36 @@ theorem concreteMUL_correct_run
   have hcount :
       input * (5 * factor + 3) + 4 =
         input * (factor + 3) + (1 + (4 * (factor * input) + 3)) := by ring
-  rw [hcount, runN_add]
-  simp only [houter, Option.some_bind]
-  rw [runN_add 1 (4 * (factor * input) + 3)]
-  simp only [hzero, Option.some_bind]
-  rw [runN_add (4 * (factor * input)) 3]
-  simp [htransfer, hexit]
+  calc
+    runN (input * (5 * factor + 3) + 4)
+        (concreteMUL factor destination) ⟨0, input, 0⟩ =
+      (runN (input * (factor + 3)) (concreteMUL factor destination)
+          ⟨0, input, 0⟩).bind
+        (fun middle => runN (1 + (4 * (factor * input) + 3))
+          (concreteMUL factor destination) middle) := by
+            rw [hcount]
+            exact runN_add (input * (factor + 3))
+              (1 + (4 * (factor * input) + 3))
+              (concreteMUL factor destination) ⟨0, input, 0⟩
+    _ = runN (1 + (4 * (factor * input) + 3))
+          (concreteMUL factor destination) ⟨0, 0, factor * input⟩ := by
+            simp [houter]
+    _ = (runN 1 (concreteMUL factor destination)
+          ⟨0, 0, factor * input⟩).bind
+          (fun middle => runN (4 * (factor * input) + 3)
+            (concreteMUL factor destination) middle) := by
+            exact runN_add 1 (4 * (factor * input) + 3)
+              (concreteMUL factor destination) ⟨0, 0, factor * input⟩
+    _ = runN (4 * (factor * input) + 3)
+          (concreteMUL factor destination) ⟨1, 0, factor * input⟩ := by
+            simp [hzero]
+    _ = (runN (4 * (factor * input)) (concreteMUL factor destination)
+          ⟨1, 0, factor * input⟩).bind
+          (fun middle => runN 3 (concreteMUL factor destination) middle) := by
+            exact runN_add (4 * (factor * input)) 3
+              (concreteMUL factor destination) ⟨1, 0, factor * input⟩
+    _ = some ⟨destination, factor * input, 0⟩ := by
+            simp [htransfer, hexit]
 
 end Compiler
 end HakuiKoyori
