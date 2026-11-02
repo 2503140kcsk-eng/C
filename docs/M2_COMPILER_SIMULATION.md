@@ -155,11 +155,13 @@ To avoid silently assuming identity encodings, the surface source is fixed as a
 deterministic one-tape Turing machine over a finite alphabet containing blank
 and a distinguished unary output symbol.
 
-At the initial source configuration, the input tape is a finite word
-`inputTape(n)` beginning at the head and blank outside that finite support.
-Its right-stack code is `ρ = encodeStack(inputTape(n))`; the left stack and
-scratch register are zero. Thus the target's M1 input is the explicit
-computable code
+At the initial source configuration, the input tape is the unary word
+`1^n` beginning at the head and blank outside those (n) cells. Let
+`d₁ ∈ {1,…,B−1}` be the fixed digit assigned to symbol `1`; its right-stack
+code is the explicit finite sum
+`ρ(n) = d₁ * (1 + B + … + B^(n−1))`, with `ρ(0)=0`.
+The left stack and scratch register are zero. Thus the target's M1 input is
+the explicit computable code
 
 `inputCode(n) = primeCode(0, ρ, 0) = 3^ρ`.
 
