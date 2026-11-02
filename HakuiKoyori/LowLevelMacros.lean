@@ -1,17 +1,5 @@
 module
 
-/-- Rebased block lookup is the mapped lookup of the original instruction. -/
-@[simp] theorem rebaseBlock_getElem? (base : Nat)
-    (block : TemplateBlock) (i : Nat) :
-    (rebaseBlock base block)[i]? =
-      Option.map (rebaseInstruction base) (block[i]?) := by
-  simp [rebaseBlock]
-
-
-@[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
-    (rebaseBlock base block).length = block.length := by
-  simp [rebaseBlock]
-
 public import HakuiKoyori.CompilerCore
 
 public section
@@ -247,6 +235,18 @@ theorem relocateRebasedBlock_getElem? (blocks : List TemplateBlock)
   simp [rebaseBlock]
 
 
+
+/-- Rebased block lookup is the mapped lookup of the original instruction. -/
+@[simp] theorem rebaseBlock_getElem? (base : Nat)
+    (block : TemplateBlock) (i : Nat) :
+    (rebaseBlock base block)[i]? =
+      Option.map (rebaseInstruction base) (block[i]?) := by
+  simp [rebaseBlock]
+
+
+@[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
+    (rebaseBlock base block).length = block.length := by
+  simp [rebaseBlock]
 
 /-- Relocate and flatten all blocks, preserving their source order. -/
 @[expose]
