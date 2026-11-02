@@ -203,6 +203,49 @@ theorem forwardSimulation_terminal_iff
         rw [ht] at hfirst
         cases hfirst
 
+
+
+/--
+A partial deterministic machine diverges from its start state when no finite
+execution from that state reaches a terminal state. Since step is a
+state-valued partial function, every nonterminal state has exactly one
+successor; thus this is the finite-prefix characterization of an infinite
+run.
+-/
+def Diverges {α : Type u} (step : α → Option α) (start : α) : Prop :=
+  ∀ final, StepStar step start final → step final ≠ none
+
+/--
+Two-way finite-step simulation plus terminal reflection preserves divergence.
+The reverse simulation is essential: it rules out a target-only finite
+termination, while forward simulation rules out target termination when the
+source still has a successor.
+-/
+theorem simulations_diverges_iff
+    {S : Type u} {T : Type v}
+    {sourceStep : S → Option S} {targetStep : T → Option T}
+    {rel : S → T → Prop}
+    (forward : ForwardSimulation sourceStep targetStep rel)
+    (backward : BackwardSimulation sourceStep targetStep rel)
+    (terminal : TerminalReflecting sourceStep targetStep rel) :
+    ∀ ⦃s t⦄, rel s t →
+      (Diverges sourceStep s ↔ Diverges targetStep t) := by
+  intro s t hrel
+  have hterminal := forwardSimulation_terminal_iff forward terminal
+  constructor
+  · intro hsourceDiverges targetFinal htargetRun htargetHalt
+    obtain ⟨sourceFinal, hsourceRun, hfinalRel⟩ :=
+      backwardSimulation_preservesStar backward hrel htargetRun
+    have hsourceHalt : sourceStep sourceFinal = none :=
+      (hterminal hfinalRel).2 htargetHalt
+    exact hsourceDiverges sourceFinal hsourceRun hsourceHalt
+  · intro htargetDiverges sourceFinal hsourceRun hsourceHalt
+    obtain ⟨targetFinal, htargetRun, hfinalRel⟩ :=
+      forwardSimulation_preservesStar forward hrel hsourceRun
+    have htargetHalt := terminal hfinalRel hsourceHalt
+    exact htargetDiverges targetFinal htargetRun htargetHalt
+
+
 /-- A finite run ending in a terminal state with a specified observable value. -/
 def TerminatesWithOutput {α : Type u}
     (step : α → Option α) (output : α → Nat) (start : α) (value : Nat) : Prop :=
