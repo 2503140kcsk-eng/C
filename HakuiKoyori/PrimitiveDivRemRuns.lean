@@ -216,18 +216,24 @@ theorem runN_relocatedTRHandler
   have hJumpIncRaw :
       handler[1 + r]? = some jumpInc := by
     rw [hhandler]
-    have h := getElem?_replicate_segment
-      ([entry] ++ residueCode)
+    have h := getElem?_middle
+      ([entry] ++ residueCode) [jumpInc]
       ([jump] ++ (transferCode ++ [finalInc, finalJump]))
-      1 0 jumpInc (by omega)
-    simpa [entry, residueCode, jumpInc, Nat.add_assoc] using h
+      0 (by simp)
+    have hlen' : ([entry] ++ residueCode).length = 1 + r := by
+      simp [residueCode]
+    simpa [entry, residueCode, jumpInc, List.append_assoc, hlen'] using h
   have hJumpRaw : handler[1 + r + 1]? = some jump := by
     rw [hhandler]
-    have h := getElem?_replicate_segment
-      ([entry] ++ residueCode ++ [jumpInc])
+    have h := getElem?_middle
+      ([entry] ++ residueCode ++ [jumpInc]) [jump]
       (transferCode ++ [finalInc, finalJump])
-      1 0 jump (by omega)
-    simpa [entry, residueCode, jumpInc, jump, Nat.add_assoc] using h
+      0 (by simp)
+    have hlen' :
+        ([entry] ++ residueCode ++ [jumpInc]).length = 1 + r + 1 := by
+      simp [residueCode]
+      omega
+    simpa [entry, residueCode, jumpInc, jump, List.append_assoc, hlen'] using h
   have hTransferRaw : ∀ i, i < m →
       handler[3 + r + i]? = some (Instruction.inc .left) := by
     intro i hi
