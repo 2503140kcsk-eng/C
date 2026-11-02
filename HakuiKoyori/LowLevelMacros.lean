@@ -76,24 +76,6 @@ def rebaseBlock (base : Nat) (block : TemplateBlock) : TemplateBlock :=
       Option.map (rebaseInstruction base) (block[i]?) := by
   simp [rebaseBlock]
 
-/-- Mapping relocation over a block preserves lookup and relocates the selected instruction. -/
-@[simp] theorem relocateBlock_getElem? (blocks : List TemplateBlock)
-    (base : Nat) (block : TemplateBlock) (i : Nat) :
-    (block.map (relocateInstruction blocks base))[i]? =
-      Option.map (relocateInstruction blocks base) (block[i]?) := by
-  simp
-
-/-- Looking up a rebased and then relocated nested instruction is pointwise composition. -/
-theorem relocateRebasedBlock_getElem? (blocks : List TemplateBlock)
-    (base nestedOffset : Nat) (block : TemplateBlock) (i : Nat) :
-    ((rebaseBlock nestedOffset block).map
-      (relocateInstruction blocks base))[i]? =
-        Option.map
-          (fun instruction =>
-            relocateInstruction blocks base
-              (rebaseInstruction nestedOffset instruction))
-          (block[i]?) := by
-  simp [rebaseBlock]
 
 @[simp] theorem rebaseBlock_length (base : Nat) (block : TemplateBlock) :
     (rebaseBlock base block).length = block.length := by
@@ -244,6 +226,27 @@ def relocateInstruction (blocks : List TemplateBlock) (base : Nat) :
     TemplateInstruction → Instruction
   | .inc which => .inc which
   | .decJump which target => .decJump which (resolveTarget blocks base target)
+
+/-- Mapping relocation over a block preserves lookup and relocates the selected instruction. -/
+@[simp] theorem relocateBlock_getElem? (blocks : List TemplateBlock)
+    (base : Nat) (block : TemplateBlock) (i : Nat) :
+    (block.map (relocateInstruction blocks base))[i]? =
+      Option.map (relocateInstruction blocks base) (block[i]?) := by
+  simp
+
+/-- Looking up a rebased and then relocated nested instruction is pointwise composition. -/
+theorem relocateRebasedBlock_getElem? (blocks : List TemplateBlock)
+    (base nestedOffset : Nat) (block : TemplateBlock) (i : Nat) :
+    ((rebaseBlock nestedOffset block).map
+      (relocateInstruction blocks base))[i]? =
+        Option.map
+          (fun instruction =>
+            relocateInstruction blocks base
+              (rebaseInstruction nestedOffset instruction))
+          (block[i]?) := by
+  simp [rebaseBlock]
+
+
 
 /-- Relocate and flatten all blocks, preserving their source order. -/
 @[expose]
