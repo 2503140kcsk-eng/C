@@ -174,7 +174,7 @@ non-destructive zero branch. The nonzero-remainder path restores the original
 value rather than merely retaining the quotient.
 
 **Termination measures.** The outer grouping loop is measured by (A):
-each return to `L_0) follows exactly (p) successful decrements, so
+each return to `L_0` follows exactly p successful decrements, so
 (A) falls by (p). Once a remainder handler is entered, its transfer loop
 is measured by (B), which falls by one on every back-edge. Each handler
 has a fixed finite straight-line prefix/suffix. Thus the block has no
