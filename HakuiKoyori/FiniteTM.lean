@@ -108,8 +108,10 @@ theorem finiteTMStep_deterministic
 theorem finiteTMStep_none_iff
     {M : FiniteTuringMachine} {c : FiniteTMConfiguration M} :
     finiteTMStep M c = none ↔ M.transition c.state c.current = none := by
-  cases h : M.transition c.state c.current <;>
-    simp [finiteTMStep, h]
+  cases h : M.transition c.state c.current with
+  | none => simp [finiteTMStep, h]
+  | some action =>
+      cases action.move <;> simp [finiteTMStep, h]
 
 /--
 Commuting theorem: erase the Fin proofs before or after one step and the
@@ -126,10 +128,18 @@ theorem finiteTMStep_toNat_compatible
       simp [finiteTMStep, finiteTMDelta, turingStep,
         toNatTMConfiguration, c.state.isLt, c.current.isLt, h]
   | some action =>
-      cases action.move <;>
-        simp [finiteTMStep, finiteTMDelta, turingStep,
-          toNatTMConfiguration, c.state.isLt, c.current.isLt, h,
-          stackPop]
+      cases hm : action.move with
+      | stay =>
+          simp [finiteTMStep, finiteTMDelta, turingStep,
+            toNatTMConfiguration, c.state.isLt, c.current.isLt, h, hm]
+      | right =>
+          simp [finiteTMStep, finiteTMDelta, turingStep,
+            toNatTMConfiguration, c.state.isLt, c.current.isLt, h, hm,
+            stackPop]
+      | left =>
+          simp [finiteTMStep, finiteTMDelta, turingStep,
+            toNatTMConfiguration, c.state.isLt, c.current.isLt, h, hm,
+            stackPop]
 
 end Compiler
 end HakuiKoyori
