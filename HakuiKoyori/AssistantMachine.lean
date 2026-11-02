@@ -1,3 +1,5 @@
+module
+
 import Mathlib.Data.Nat.Pairing
 import Mathlib.Logic.Equiv.List
 
@@ -173,7 +175,7 @@ configuration and its terminal configuration. Each nonterminal entry has
 exactly the successor prescribed by step; the final entry has no successor.
 -/
 inductive ExecutionTrace (p : Program) :
-    Configuration → Trace → Configuration → Prop where
+    Configuration → Trace → Configuration → Type where
   | halt (c : Configuration) (hhalt : step p c = none) :
       ExecutionTrace p c [c] c
   | cons {c next final : Configuration} {tail : Trace}
@@ -191,11 +193,11 @@ theorem trace_final_unique
   induction h₁ generalizing trace₂ final₂ with
   | halt c hhalt =>
       cases h₂ with
-      | halt _ => rfl
+      | halt _ _ => rfl
       | cons hstep _ => simp [hhalt] at hstep
   | cons hstep₁ htail₁ ih =>
       cases h₂ with
-      | halt hhalt₂ => simp [hstep₁] at hhalt₂
+      | halt _ hhalt₂ => simp [hstep₁] at hhalt₂
       | cons hstep₂ htail₂ =>
           have hnext := step_deterministic hstep₁ hstep₂
           cases hnext
@@ -245,7 +247,7 @@ theorem haltingOutput?_of_halts {p : Program} {input output : Nat}
   classical
   unfold haltingOutput?
   have hex : ∃ output', HaltsWithOutput p input output' := ⟨output, h⟩
-  rw [dif_pos hex]
+  rw [dite_eq_left hex]
   have hchoose : Classical.choose hex = output :=
     halts_output_unique (Classical.choose_spec hex) h
   simp [hchoose]
@@ -271,10 +273,11 @@ theorem halting_output_le_maxHaltOutput
     (hcode : code ≤ bound)
     (h : HaltsWithOutput (decodeProgram code) input output) :
     output ≤ maxHaltOutput bound input := by
-  induction bound with
+  induction bound generalizing code with
   | zero =>
       have hcode0 : code = 0 := Nat.eq_zero_of_le_zero hcode
       subst code
+      rw [decodeProgram_zero] at h
       simp [maxHaltOutput, haltingOutput?_of_halts h]
   | succ bound ih =>
       rcases Nat.eq_or_lt_of_le hcode with heq | hlt
