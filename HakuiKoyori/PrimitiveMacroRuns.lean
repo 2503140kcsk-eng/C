@@ -79,6 +79,7 @@ theorem concreteMUL_replicate_step
       (concreteMUL factor destination)[7 + i]? =
         some (.inc .right) := by
     rw [concreteMUL_eq]
+    rw [← List.append_assoc]
     rw [List.getElem?_append_right (by omega)]
     have hidx : 7 + i - 7 = i := by omega
     rw [hidx, List.getElem?_append_left hi]
@@ -95,6 +96,7 @@ theorem concreteMUL_identity_first
       (concreteMUL factor destination)[7 + factor]? =
         some (.inc .right) := by
     rw [concreteMUL_eq]
+    rw [← List.append_assoc]
     rw [List.getElem?_append_right (by omega)]
     have hidx : 7 + factor - 7 = factor := by omega
     rw [hidx, List.getElem?_append_right (by omega)]
@@ -112,6 +114,7 @@ theorem concreteMUL_identity_second
       (concreteMUL factor destination)[8 + factor]? =
         some (.decJump .right 0) := by
     rw [concreteMUL_eq]
+    rw [← List.append_assoc]
     rw [List.getElem?_append_right (by omega)]
     have hidx : 8 + factor - 7 = factor + 1 := by omega
     rw [hidx, List.getElem?_append_right (by omega)]
