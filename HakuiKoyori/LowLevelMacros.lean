@@ -165,6 +165,7 @@ def divRemBlock (p : Nat) (destinationDiv destinationNondiv : JumpTarget) :
   divRemAux p destinationDiv destinationNondiv p 0
 
 /-- A finite block list can be enumerated with its source PC. -/
+@[expose]
 def enumerateBlocks {α : Type u} : List α → Nat → List (Nat × α)
   | [], _ => []
   | x :: xs, n => (n, x) :: enumerateBlocks xs (n + 1)
