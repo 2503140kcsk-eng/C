@@ -86,5 +86,121 @@ theorem stackPushViaMUL_correct (base digit restCode : Nat) :
       stackPush base digit restCode := by
   simp [stackPushViaMUL, stackPush, MUL_correct, Nat.add_comm]
 
+
+/-!
+## Single-tape deterministic Turing-machine semantics
+
+The tape is split around the current cell.  The left and right stacks store
+cells nearest-first; an empty stack denotes an unbounded blank tail.  The
+current cell is explicit.  Moving right pushes the written cell onto the
+left stack and pops the right stack; moving left is symmetric.
+-/
+
+/-- Direction of a single-tape Turing-machine head movement. -/
+inductive TapeMove where
+  | left
+  | right
+  | stay
+deriving DecidableEq, Repr
+
+/-- One transition-table entry: new state, symbol written, and head movement. -/
+structure TMAction where
+  nextState : Nat
+  writeSymbol : Nat
+  move : TapeMove
+deriving DecidableEq, Repr
+
+/-- A deterministic transition table; none means that the machine halts. -/
+abbrev TMDelta := Nat → Nat → Option TMAction
+
+/-- Tape configuration with the two sides represented by arithmetic stack codes. -/
+structure TMConfiguration where
+  state : Nat
+  leftStack : Nat
+  current : Nat
+  rightStack : Nat
+deriving DecidableEq, Repr
+
+/--
+One transition of the encoded single-tape Turing machine.  The base is the
+stack alphabet radix; the blank symbol is zero.
+-/
+def turingStep (base : Nat) (delta : TMDelta)
+    (configuration : TMConfiguration) : Option TMConfiguration :=
+  match delta configuration.state configuration.current with
+  | none => none
+  | some action =>
+      match action.move with
+      | .stay =>
+          some { state := action.nextState
+                 leftStack := configuration.leftStack
+                 current := action.writeSymbol
+                 rightStack := configuration.rightStack }
+      | .right =>
+          let popped := stackPop base configuration.rightStack
+          some { state := action.nextState
+                 leftStack := stackPush base action.writeSymbol configuration.leftStack
+                 current := popped.1
+                 rightStack := popped.2 }
+      | .left =>
+          let popped := stackPop base configuration.leftStack
+          some { state := action.nextState
+                 leftStack := popped.2
+                 current := popped.1
+                 rightStack := stackPush base action.writeSymbol configuration.rightStack }
+
+/-- The encoded Turing-machine transition is deterministic. -/
+theorem turingStep_deterministic {base : Nat} {delta : TMDelta}
+    {configuration next₁ next₂ : TMConfiguration}
+    (h₁ : turingStep base delta configuration = some next₁)
+    (h₂ : turingStep base delta configuration = some next₂) :
+    next₁ = next₂ := by
+  exact Option.some.inj (h₁.symm.trans h₂)
+
+/-- The encoded Turing machine halts exactly when its transition table is undefined. -/
+theorem turingStep_none_iff {base : Nat} {delta : TMDelta}
+    {configuration : TMConfiguration} :
+    turingStep base delta configuration = none ↔
+      delta configuration.state configuration.current = none := by
+  cases h : delta configuration.state configuration.current <;>
+    simp [turingStep, h]
+
+/-- One step with a stay action only changes the state and current symbol. -/
+theorem turingStep_stay {base : Nat} {delta : TMDelta}
+    {configuration : TMConfiguration} {action : TMAction}
+    (h : delta configuration.state configuration.current = some action)
+    (hm : action.move = .stay) :
+    turingStep base delta configuration =
+      some { state := action.nextState
+             leftStack := configuration.leftStack
+             current := action.writeSymbol
+             rightStack := configuration.rightStack } := by
+  simp [turingStep, h, hm]
+
+/-- One step to the right pushes the written symbol left and pops the right stack. -/
+theorem turingStep_right {base : Nat} {delta : TMDelta}
+    {configuration : TMConfiguration} {action : TMAction}
+    (h : delta configuration.state configuration.current = some action)
+    (hm : action.move = .right) :
+    turingStep base delta configuration =
+      some { state := action.nextState
+             leftStack := stackPush base action.writeSymbol configuration.leftStack
+             current := (stackPop base configuration.rightStack).1
+             rightStack := (stackPop base configuration.rightStack).2 } := by
+  simp [turingStep, h, hm]
+
+/-- One step to the left pushes the written symbol right and pops the left stack. -/
+theorem turingStep_left {base : Nat} {delta : TMDelta}
+    {configuration : TMConfiguration} {action : TMAction}
+    (h : delta configuration.state configuration.current = some action)
+    (hm : action.move = .left) :
+    turingStep base delta configuration =
+      some { state := action.nextState
+             leftStack := (stackPop base configuration.leftStack).2
+             current := (stackPop base configuration.leftStack).1
+             rightStack := stackPush base action.writeSymbol configuration.rightStack } := by
+  simp [turingStep, h, hm]
+
+
 end Compiler
 end HakuiKoyori
