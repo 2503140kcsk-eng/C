@@ -54,3 +54,5 @@ jobs:
         run: lake env lean HakuiKoyori/StackSemantics.lean
       - name: Check finite typed Turing machine semantics
         run: lake env lean HakuiKoyori/FiniteTM.lean
+      - name: Check primitive MUL execution
+        run: lake env lean HakuiKoyori/PrimitiveMacroRuns.lean
